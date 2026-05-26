@@ -15,7 +15,7 @@ flowchart TD
     C --> D[Publish to Notion]
     D -- success --> E[(Notion page\nstatus: Draft)]
     D -- unavailable --> F([Draft saved locally\nresume publishing\nwhen Notion is accessible])
-    E --> G["Delivery\nDraft → Accepted → In Delivery"]
+    E --> G[Delivery]
     G --> H[Behaviour Validated]
     H --> I[Retro · fill §4.18]
     I --> J([Archived Learning ✓\nmost VFPs end here])
