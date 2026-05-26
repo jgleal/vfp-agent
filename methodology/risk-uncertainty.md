@@ -36,11 +36,39 @@ Operational reasoning should optimise for:
 
 ---
 
-## 3. Uncertainty Classification Patterns
+## 3. Operational Uncertainty Thinking
+
+This methodology intentionally reframes delivery uncertainty from **implementation-centric risk thinking** towards **behavioural and operational uncertainty awareness.**
+
+Traditional delivery models frequently focus primarily on:
+- implementation complexity
+- architecture concerns
+- infrastructure dependencies
+- technical coordination
+
+While the most dangerous risks often remain:
+- behavioural misunderstanding
+- validation ambiguity
+- hidden operational assumptions
+- semantic instability
+- expectation drift
+- invisible workflow complexity
+
+This methodology therefore prioritises:
+- behavioural visibility
+- operational understanding
+- progressive validation
+- ambiguity exposure
+- adaptive progression reasoning
+- recurring uncertainty awareness
 
 ---
 
-### 3.1 Semantic Underestimation
+## 4. Uncertainty Classification Patterns
+
+---
+
+### 4.1 Semantic Underestimation
 
 **Definition:** The request appears behaviourally or operationally larger than its initial wording suggests.
 
@@ -61,7 +89,7 @@ Operational reasoning should optimise for:
 
 ---
 
-### 3.2 Behavioural Ambiguity
+### 4.2 Behavioural Ambiguity
 
 **Definition:** Expected user behaviour or operational interaction is insufficiently defined.
 
@@ -74,7 +102,7 @@ Operational reasoning should optimise for:
 
 ---
 
-### 3.3 Validation Uncertainty
+### 4.3 Validation Uncertainty
 
 **Definition:** It is unclear how usefulness, behavioural improvement, or operational success will be observed.
 
@@ -87,7 +115,7 @@ Operational reasoning should optimise for:
 
 ---
 
-### 3.4 Scope Expansion Risk
+### 4.4 Scope Expansion Risk
 
 **Definition:** Behavioural or operational boundaries are insufficiently constrained.
 
@@ -100,7 +128,7 @@ Operational reasoning should optimise for:
 
 ---
 
-### 3.5 Oversized Capability Risk
+### 4.5 Oversized Capability Risk
 
 **Definition:** The proposed capability combines too many behavioural surfaces to validate effectively.
 
@@ -110,7 +138,7 @@ Operational reasoning should optimise for:
 
 ---
 
-### 3.6 Dependency Complexity
+### 4.6 Dependency Complexity
 
 **Definition:** The request may depend on external systems, operational workflows, integrations, teams, infrastructure assumptions, or undefined ownership boundaries.
 
@@ -118,7 +146,7 @@ Operational reasoning should optimise for:
 
 ---
 
-### 3.7 Operational Uncertainty
+### 4.7 Operational Uncertainty
 
 **Definition:** The request implies operational behaviour that has not yet been defined.
 
@@ -128,7 +156,7 @@ Operational reasoning should optimise for:
 
 ---
 
-### 3.8 Exploratory Behaviour
+### 4.8 Exploratory Behaviour
 
 **Definition:** The capability or slice exists primarily to validate assumptions, test behavioural expectations, reduce uncertainty, or accelerate learning.
 
@@ -138,7 +166,7 @@ Operational reasoning should optimise for:
 
 ---
 
-## 4. Common Heuristic Signals
+## 5. Common Heuristic Signals
 
 Watch for these in any raw input:
 
@@ -154,7 +182,28 @@ Watch for these in any raw input:
 
 ---
 
-## 5. Common Failure Modes
+### 5.1 Recurring Uncertainty Pattern Detection
+
+As operational delivery interactions evolve over time, uncertainty patterns may begin to repeat across behavioural framing, capability slicing, validation thinking, operational assumptions, and refinement evolution.
+
+The framework should progressively preserve enough operational traceability to allow future reflective processes to identify recurring uncertainty patterns. Examples may include:
+- repeated semantic underestimation
+- recurring behavioural ambiguity
+- chronic validation weakness
+- oversized capability framing
+- hidden orchestration assumptions
+- repeated operational ownership gaps
+- persistent implementation-first reasoning patterns
+
+The purpose of identifying recurring uncertainty patterns is NOT automated governance escalation or rigid delivery enforcement.
+
+The purpose IS: improving delivery intelligence, improving behavioural reasoning quality, strengthening validation thinking, and supporting adaptive operational learning over time.
+
+Raw operational history should remain source material rather than validated methodology.
+
+---
+
+## 6. Common Failure Modes
 
 | Failure Mode | Description | Effect |
 |---|---|---|
@@ -167,7 +216,22 @@ Watch for these in any raw input:
 
 ---
 
-## 6. Operational Guidance
+## 7. Learning Velocity & Uncertainty Reduction
+
+The methodology treats **learning velocity** as a critical delivery optimisation metric.
+
+Delivery progression depends on:
+- how quickly assumptions become visible
+- how quickly ambiguity becomes testable
+- how quickly behavioural understanding improves
+- how quickly validation signals emerge
+- how quickly confidence becomes evidence-based
+
+Small exploratory slices are therefore valuable because they accelerate: learning, adaptation, uncertainty reduction, and behavioural understanding.
+
+---
+
+## 8. Operational Guidance
 
 The methodology avoids: rigid readiness gates, waterfall-style progression blocking, certainty-before-movement thinking.
 
@@ -179,3 +243,30 @@ Delivery progression should continue through:
 - visible uncertainty management
 
 **The objective is: safe empirical continuation with visible uncertainty.**
+
+---
+
+## 9. Human Governance & Operational Ownership
+
+Humans remain responsible for: governance, prioritisation, trade-offs, strategic decisions, operational ownership, and accountability.
+
+AI should assist: ambiguity visibility, uncertainty classification, behavioural risk identification, semantic underestimation detection, exploratory reasoning, continuity-of-intent preservation, and adaptive progression guidance.
+
+AI should not own: accountability, governance authority, business intent, or final acceptance decisions.
+
+---
+
+## 10. Final Operational Guidance
+
+The objective of uncertainty-aware delivery is NOT: governance-heavy escalation, refinement paralysis, certainty theatre, or rigid progression blocking.
+
+The objective IS: **improving delivery intelligence while preserving adaptive empirical movement.**
+
+The methodology continuously optimises for:
+- visible uncertainty
+- bounded progression
+- behavioural awareness
+- learning velocity
+- adaptive delivery evolution
+- operational understanding
+- continuity of intent

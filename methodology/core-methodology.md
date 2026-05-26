@@ -26,7 +26,56 @@ This phase is not focused on full automation, autonomous agents, or implementati
 
 ---
 
-## 2. Core Idea
+## 2. Core Delivery Assumptions
+
+Assume the following:
+
+- Requests are rarely fully formed.
+- Ambiguity is normal.
+- Understanding evolves over time.
+- Behaviour is more important than implementation decomposition.
+- Output is not equivalent to value.
+- Human intent may be incomplete, inconsistent, or underspecified.
+- Validation thinking should begin before implementation.
+- Capability understanding evolves through iteration and evidence.
+- Human ownership remains mandatory.
+- AI may assist interpretation, but AI does not own intent.
+
+Incoming requests may contain:
+
+- hidden assumptions
+- semantic ambiguity
+- oversized scope
+- unclear validation expectations
+- behavioural gaps
+- implementation bias
+- invisible dependencies
+- fragmented understanding
+
+The framework should expose these conditions rather than hide them behind artificial certainty.
+
+---
+
+## 3. Primary Reasoning Priorities
+
+When reasoning about delivery work, prioritise:
+
+1. Behavioural understanding before technical decomposition.
+2. Observable value before implementation output.
+3. Ambiguity visibility before artificial certainty.
+4. Independently useful capability slices.
+5. Validation opportunities before optimisation.
+6. Continuity of intent across lifecycle stages.
+7. Empirical progression over specification completeness.
+8. Explicit assumptions over hidden assumptions.
+9. Behavioural coherence over implementation layering.
+10. Lightweight iteration over governance-heavy refinement.
+
+Avoid prematurely focusing on backend/frontend decomposition, technical ownership splitting, infrastructure-first planning, QA isolation, implementation sequencing, or detailed solution architecture. These may become relevant later, but should not dominate early delivery understanding.
+
+---
+
+## 4. Core Idea
 
 The system acts as an upstream intent-definition and value-framing layer.
 
@@ -50,7 +99,7 @@ The purpose is not to fully eliminate uncertainty before work begins.
 
 ---
 
-## 3. Continuity of Intent
+## 5. Continuity of Intent
 
 The framework is designed to preserve continuity between:
 
@@ -64,7 +113,7 @@ The goal is to reduce the loss of intent that often occurs when work moves betwe
 
 ---
 
-## 4. Functional Flow
+## 6. Functional Flow
 
 ```
 Input (idea, ticket, transcript, request)
@@ -95,7 +144,7 @@ Human validation confirms:
 
 ---
 
-## 5. Input Layer
+## 7. Input Layer
 
 The input can come from different sources:
 
@@ -116,7 +165,7 @@ The input does not need to be perfect. The system should assume many inputs will
 
 ---
 
-## 6. Value Framing Layer
+## 8. Value Framing Layer
 
 The Value Framing Packet is the central artefact.
 
@@ -130,7 +179,7 @@ It should be clear enough for humans to validate, and structured enough to suppo
 
 ---
 
-## 7. Packet Review & Regeneration
+## 9. Packet Review & Regeneration
 
 A Value Framing Packet should not be treated as automatically correct when generated.
 
@@ -147,7 +196,7 @@ When a packet is regenerated, the system should make visible:
 
 ---
 
-## 8. Core Principles
+## 10. Core Principles
 
 | Optimise for | Avoid |
 |---|---|
@@ -160,7 +209,7 @@ When a packet is regenerated, the system should make visible:
 
 ---
 
-## 9. Evidence Collection
+## 11. Evidence Collection
 
 Evidence should be gathered after each capability slice is implemented and explored, and again when the full packet moves to `Behaviour Validated`.
 
@@ -181,7 +230,7 @@ The primary reference point is the **Proposed Agreement Boundary** (section 4.10
 
 ---
 
-## 10. Evaluation
+## 12. Evaluation
 
 Evaluation is the process of comparing what was agreed against what was actually observed.
 
@@ -214,7 +263,7 @@ See [`vfp-guide.md`](./vfp-guide.md) section 4.18 for the post-delivery outcome 
 
 ---
 
-## 11. Methodology Improvement
+## 13. Methodology Improvement
 
 Patterns identified during evaluation should inform the methodology itself — how future packets are generated and how the framework evolves.
 

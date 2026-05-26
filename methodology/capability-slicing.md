@@ -92,7 +92,44 @@ The key questions are:
 
 ---
 
-## 6. What Is A Capability Slice?
+## 6. Sense & Respond Delivery Progression
+
+The methodology assumes delivery progression should continuously adapt to emerging understanding.
+
+This means:
+- capability definitions may evolve
+- slices may split or merge
+- assumptions may change
+- priorities may shift
+- exploratory work may appear
+- delivery understanding may continuously mature
+
+These are NOT considered failures. They are expected behaviours within adaptive delivery systems.
+
+The objective is NOT rigid predictability.
+
+The objective is: **progressive behavioural understanding with bounded uncertainty.**
+
+---
+
+## 7. Learning Velocity
+
+The methodology treats **learning velocity** as a critical delivery optimisation metric.
+
+Delivery speed is NOT defined purely by amount of work completed, implementation throughput, or engineering activity.
+
+Delivery speed is also determined by:
+- how quickly teams validate behaviour
+- how quickly ambiguity becomes visible
+- how quickly assumptions become testable
+- how quickly operational understanding improves
+- how quickly confidence becomes evidence-based
+
+Small behavioural slices are therefore valuable because they accelerate: learning, validation, adaptation, and understanding evolution.
+
+---
+
+## 8. What Is A Capability Slice?
 
 A capability slice is:
 - a bounded behavioural increment
@@ -105,7 +142,7 @@ A capability slice should answer: *"What meaningful behaviour, capability, under
 
 ---
 
-## 7. Core Slicing Principles
+## 9. Core Slicing Principles
 
 Good capability slices should:
 - preserve behavioural coherence
@@ -123,7 +160,44 @@ NOT: implementation convenience, repository structure, technical ownership, arch
 
 ---
 
-## 8. Behaviour Before Technical Layers
+## 10. Behavioural Cohesion
+
+Capability slices should preserve **behavioural cohesion.**
+
+A slice should represent:
+- a coherent behavioural capability
+- a coherent validation opportunity
+- a coherent workflow
+- or a coherent operational interaction
+
+Avoid arbitrary fragmentation caused purely by repositories, teams, architecture layers, implementation sequencing, ownership structures, or technical concerns.
+
+The slice should remain understandable from an external behavioural perspective.
+
+---
+
+## 11. Validation-Oriented Slicing
+
+Slices should support **behavioural validation.**
+
+Useful slices often allow teams to validate:
+- behavioural usefulness
+- workflow understanding
+- operational viability
+- user confidence
+- behavioural adoption
+- assumption quality
+- alignment strength
+
+before broader implementation investment occurs.
+
+Validation should focus on: observable behaviour, usefulness, learning, confidence generation, and operational understanding.
+
+Not merely: implementation completion, engineering activity, or architecture readiness.
+
+---
+
+## 12. Behaviour Before Technical Layers
 
 Traditional decomposition frequently fragments work into backend, frontend, APIs, infrastructure, repositories, QA, or implementation ownership concerns.
 
@@ -133,7 +207,19 @@ Technical structure should support behavioural delivery — not define delivery 
 
 ---
 
-## 9. Smallest Meaningful Behavioural Validation
+## 13. Relationship With Technical Decomposition
+
+Technical decomposition still exists and remains important. Examples include APIs, repositories, infrastructure, frontend layers, backend services, observability, QA automation, deployment architecture, and operational tooling.
+
+However: **behavioural framing should happen before implementation fragmentation.**
+
+Technical decomposition should support behavioural delivery, operational usefulness, validation, and adaptive progression.
+
+It should not replace behavioural understanding.
+
+---
+
+## 14. Smallest Meaningful Behavioural Validation
 
 Slices should optimise for **the smallest meaningful behavioural validation opportunity.**
 
@@ -143,7 +229,7 @@ The objective is not small implementation tasks. The objective is **small behavi
 
 ---
 
-## 10. Exploratory Slices
+## 15. Exploratory Slices
 
 Some slices exist primarily to validate assumptions, reduce uncertainty, explore workflows, test operational behaviour, or generate learning. These are **exploratory slices**.
 
@@ -153,7 +239,7 @@ The methodology assumes exploratory work is a legitimate and necessary delivery 
 
 ---
 
-## 11. Semantic Underestimation Detection
+## 16. Semantic Underestimation Detection
 
 One of the primary goals of behavioural slicing is identifying **semantic underestimation** — where a request sounds smaller, simpler, or more bounded than its implied behavioural or operational complexity.
 
@@ -172,7 +258,7 @@ Hidden complexity: tutoring behaviour, instructional design, behavioural adaptat
 
 ---
 
-## 12. Oversized Capability Detection
+## 17. Oversized Capability Detection
 
 **Common oversized slice signals:**
 - "complete platform" language
@@ -187,7 +273,7 @@ Oversized slices reduce learning speed, adaptability, validation quality, and be
 
 ---
 
-## 13. Deferred Uncertainty
+## 18. Deferred Uncertainty
 
 Undefined areas should not disappear. Uncertainty should remain visible, assumptions should remain traceable, unresolved areas should remain bounded.
 
@@ -197,7 +283,57 @@ The objective is: **bounded empirical continuation with visible uncertainty.**
 
 ---
 
-## 14. Examples
+## 19. Capability Evolution
+
+Capabilities should be expected to evolve over time. Capabilities may:
+- split
+- merge
+- narrow
+- expand
+- become exploratory
+- become operationally refined
+- change behavioural boundaries
+
+These are expected behaviours within adaptive delivery systems.
+
+The objective is not static decomposition stability.
+
+The objective is: **continuous behavioural understanding evolution.**
+
+---
+
+## 20. Slicing Evolution & Reflective Learning
+
+As delivery interactions evolve over time, capability slicing patterns may also evolve through operational learning and reflective evaluation.
+
+The framework should progressively preserve enough operational traceability to allow future reflective processes to analyse slicing evolution, oversized capability patterns, behavioural fragmentation, validation effectiveness, exploratory progression quality, ambiguity reduction behaviour, and continuity-of-intent preservation.
+
+The objective is NOT creating rigid optimisation rules for slicing behaviour.
+
+The objective IS: **improving behavioural delivery reasoning through operational learning and reflective pattern evaluation.**
+
+Only intentionally evaluated and curated insights should evolve into reusable slicing guidance or methodology improvements.
+
+Raw operational slicing history should remain source material rather than validated methodology.
+
+---
+
+## 21. Relationship With Value Framing Packets
+
+Capability slices should remain connected to:
+- behavioural intent
+- expected value
+- validation signals
+- operational usefulness
+- agreement boundaries defined in the Value Framing Packet
+
+Slices should not drift into: disconnected implementation work, isolated technical decomposition, or behaviourally meaningless fragmentation.
+
+Capability slicing exists to support **continuity of understanding across delivery progression.**
+
+---
+
+## 22. Examples
 
 ### Meeting Room Booking
 
@@ -217,7 +353,7 @@ The objective is: **bounded empirical continuation with visible uncertainty.**
 
 ---
 
-## 15. Human Governance
+## 23. Human Governance
 
 Humans remain responsible for: prioritisation, trade-offs, sequencing, governance, implementation strategy, and accountability.
 
