@@ -1,6 +1,10 @@
 # vfp-agent
 
-**Value Framing Packet (VFP) generator** — an AI agent that transforms raw delivery inputs (ideas, tickets, requests, initiatives) into structured 17-section framing artefacts that expose behavioural intent, surface uncertainty, and define the smallest meaningful validation slice.
+Delivery teams consistently underestimate requests — not because they lack information, but because they frame them in implementation terms before understanding the behaviour they are trying to change. A ticket that says "add booking system" conceals who does what, what changes in their world, what uncertainty exists, and what the smallest meaningful thing to validate would be.
+
+`vfp-agent` intervenes at the framing stage. It generates **Value Framing Packets (VFPs)** — structured artefacts that expose behavioural intent, surface assumptions, bound uncertainty, and define the smallest meaningful validation slice before work starts. After delivery, it guides retrospectives that close the packet lifecycle and feed learning back into the methodology.
+
+It is not a requirements tool. It is not a spec generator. It is a behavioural framing instrument.
 
 Installs to **7 AI tools** via a single interactive installer. No npm runtime dependencies.
 
@@ -164,12 +168,9 @@ Gemini CLI and Codex CLI MCP config formats are not yet standardised — configu
 
 Invoke with: *"generate a VFP"*, *"frame this request"*, *"create a value framing packet"*, or *"help me structure this delivery"*.
 
-The agent:
+The agent interprets the **behavioural intent** behind the request — not its implementation. It detects uncertainty signals, generates all **17 sections** in order, and requires publishing the result to Notion before the packet is considered complete. A packet that has not been published is in Draft state and incomplete.
 
-1. Interprets the behavioural intent of the input (not just paraphrasing it)
-2. Detects uncertainty signals before writing
-3. Generates all **17 sections** in order
-4. Offers to publish the result to Notion
+The agent is not a requirements analyst, not a technical architect, not a project manager. If a generated VFP reads like a PRD or a technical spec, it has failed.
 
 ### Publishing to Notion
 
