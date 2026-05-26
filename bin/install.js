@@ -394,53 +394,102 @@ async function prompt(question) {
   });
 }
 
-// ── Interactive tool selector ──────────────────────────────────────────────
-async function interactiveSelect(detected, all, c) {
-  process.stdout.write('\n');
-  process.stdout.write(c.bold('vfp-agent installer\n\n'));
-
+// ── Interactive TUI selector ───────────────────────────────────────────────
+// Arrow keys ↑/↓ move cursor, space toggles, a=all/none, enter=confirm, q=quit.
+async function interactiveSelect(detected, all, c, opts) {
   const detectedSet    = new Set(detected.map(p => p.id));
   const detectedList   = all.filter(p =>  detectedSet.has(p.id));
   const undetectedList = all.filter(p => !detectedSet.has(p.id));
   const ordered        = [...detectedList, ...undetectedList];
 
-  process.stdout.write('Available tools:\n\n');
-  ordered.forEach((p, i) => {
-    const num    = String(i + 1).padStart(2);
-    const marker = detectedSet.has(p.id) ? c.green('✓') : c.dim('·');
-    const label  = detectedSet.has(p.id) ? c.bold(p.label) : c.dim(p.label);
-    const note   = detectedSet.has(p.id) ? '' : c.dim(' (not detected)');
-    process.stdout.write(`  ${num}  ${marker}  ${label}${note}\n`);
-  });
+  // Non-TTY: fall back to detected only.
+  if (!process.stdin.isTTY) return detectedList;
 
-  process.stdout.write('\n');
-  process.stdout.write(c.dim('Enter numbers (e.g. 1,3), ranges (1-3), "all",\n'));
-  process.stdout.write(c.dim('or press Enter to install to detected tools only.\n\n'));
-
-  const answer = await prompt('> ');
-  if (answer === null || answer === '') return detectedList;
-
-  const lower = answer.toLowerCase().trim();
-  if (lower === 'all') return ordered;
-
+  // Initially pre-select all detected tools.
   const selected = new Set();
-  for (const token of lower.split(',')) {
-    const t = token.trim();
-    const range = t.match(/^(\d+)-(\d+)$/);
-    if (range) {
-      for (let n = parseInt(range[1], 10); n <= parseInt(range[2], 10); n++)
-        if (n >= 1 && n <= ordered.length) selected.add(n - 1);
+  ordered.forEach((p, i) => { if (detectedSet.has(p.id)) selected.add(i); });
+
+  let cursor = 0;
+  // tool rows + 1 blank + 1 hint line
+  const TOTAL_LINES = ordered.length + 2;
+
+  function renderRows(redraw) {
+    const out = [];
+    for (let i = 0; i < ordered.length; i++) {
+      const p          = ordered[i];
+      const isSel      = selected.has(i);
+      const isDetected = detectedSet.has(p.id);
+
+      const check = isSel ? c.green('[✓]') : c.dim('[ ]');
+      const label = isDetected ? c.bold(p.label) : p.label;
+      const badge = isDetected ? c.dim(' detected') : c.dim(' (not detected)');
+      const arrow = cursor === i ? '>' : ' ';
+
+      out.push(`  ${arrow} ${check} ${label}${badge}`);
+    }
+    out.push('');
+    out.push(c.dim('↑/↓ move  space toggle  a all/none  enter confirm  q quit'));
+
+    if (redraw) {
+      // Move up and overwrite each line in-place.
+      process.stdout.write(`\x1b[${TOTAL_LINES}A`);
+      for (const line of out) process.stdout.write(`\r\x1b[2K${line}\n`);
     } else {
-      const n = parseInt(t, 10);
-      if (!isNaN(n) && n >= 1 && n <= ordered.length) selected.add(n - 1);
+      process.stdout.write(out.join('\n') + '\n');
     }
   }
 
-  if (selected.size === 0) {
-    process.stdout.write(c.yellow('Nothing selected — installing detected tools only.\n'));
-    return detectedList;
-  }
-  return ordered.filter((_, i) => selected.has(i));
+  // Static header printed once.
+  process.stdout.write('\n');
+  process.stdout.write(c.bold('vfp-agent installer\n\n'));
+  process.stdout.write('Available tools:\n');
+  renderRows(false);
+
+  // Hide terminal cursor while navigating.
+  process.stdout.write('\x1b[?25l');
+
+  return new Promise((resolve) => {
+    let resolved = false;
+
+    function cleanup(result) {
+      if (resolved) return;
+      resolved = true;
+      process.stdin.removeListener('data', onData);
+      process.stdin.setRawMode(false);
+      process.stdout.write('\x1b[?25h\n'); // restore cursor + blank line
+      resolve(result);
+    }
+
+    function onData(key) {
+      if (key === '\x03') {                           // Ctrl-C
+        cleanup([]);
+        process.exit(0);
+      } else if (key === '\x1b[A') {                 // ↑
+        cursor = (cursor - 1 + ordered.length) % ordered.length;
+        renderRows(true);
+      } else if (key === '\x1b[B') {                 // ↓
+        cursor = (cursor + 1) % ordered.length;
+        renderRows(true);
+      } else if (key === ' ') {                      // space: toggle
+        if (selected.has(cursor)) selected.delete(cursor);
+        else selected.add(cursor);
+        renderRows(true);
+      } else if (key === 'a') {                      // a: all/none
+        if (selected.size === ordered.length) selected.clear();
+        else ordered.forEach((_, i) => selected.add(i));
+        renderRows(true);
+      } else if (key === '\r') {                     // enter: confirm
+        cleanup(ordered.filter((_, i) => selected.has(i)));
+      } else if (key === 'q' || key === '\x1b') {    // q / Escape: quit
+        cleanup([]);
+      }
+    }
+
+    process.stdin.setRawMode(true);
+    process.stdin.setEncoding('utf8');
+    process.stdin.resume();
+    process.stdin.on('data', onData);
+  });
 }
 
 // ── Per-provider install ───────────────────────────────────────────────────
@@ -505,8 +554,8 @@ ${c.bold('USAGE')}
   curl -fsSL https://raw.githubusercontent.com/jgleal/vfp-agent/main/install.sh | bash
 
 ${c.bold('DEFAULT')}
-  No flags → interactive selector. Detected tools shown first (✓).
-  Select by number, range, "all", or Enter for detected only.
+  No flags → interactive TUI selector. Detected tools shown first.
+  ↑/↓ move cursor  space toggle selection  a all/none  enter confirm  q quit
 
 ${c.bold('FLAGS')}
   --all                  Install to all detected tools without prompting
@@ -566,7 +615,7 @@ async function main() {
       process.exit(0);
     }
   } else {
-    active = await interactiveSelect(allDetected, PROVIDERS, c);
+    active = await interactiveSelect(allDetected, PROVIDERS, c, opts);
     if (!active || active.length === 0) {
       process.stdout.write('Nothing selected. Exiting.\n');
       process.exit(0);
