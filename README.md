@@ -14,23 +14,19 @@ flowchart TD
     B --> C[17-section packet]
     C --> D[Publish to Notion]:::agent
     D -- success --> E[(Notion page\nstatus: Draft)]
-    D -- unavailable --> F([Incomplete\nresume when Notion available])
+    D -- unavailable --> F([Incomplete — resume later])
     E --> G[Deliver]:::human
     G --> H[Mark: Behaviour Validated]:::human
     H --> I[Retro · fill §4.18]:::collab
-    I --> J([Archived Learning ✓\nmost VFPs end here])
+    I --> J([Archived Learning ✓])
 
     I -.->|optional| K{Worth generalising?}:::human
     K -- no --> L([Done])
-    K -- yes --> M[Add to learnings.md\nstatus: watching]:::human
-    M -.->|next packet| N{Pattern confirmed\nin 2+ packets?}:::human
-    N -- not yet --> O([Keep watching])
-    N -- confirmed --> P[Level 3 draft\ndiff · PR description]:::agent
-    P --> Q[Review and adjust]:::human
-    Q --> R[gh pr create]:::human
-    R --> S[gh pr merge]:::human
-    S --> T[--update distributes]:::agent
-    T --> U([Core agent updated ✓])
+    K -- yes --> M[Record learning]:::collab
+    M -.->|pattern confirmed\nacross packets| P[Propose methodology change]:::collab
+    P --> Q[Change merged]:::human
+    Q --> R[--update distributes]:::agent
+    R --> S([Core agent updated ✓])
 
     classDef agent fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
     classDef human fill:#fef9c3,stroke:#ca8a04,color:#713f12
