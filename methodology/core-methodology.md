@@ -157,3 +157,78 @@ When a packet is regenerated, the system should make visible:
 | Learning velocity | Output volume |
 | Bounded progression | Rigid readiness gates |
 | Continuity of intent | Intent drift |
+
+---
+
+## 9. Evidence Collection
+
+Evidence should be gathered after each capability slice is implemented and explored, and again when the full packet moves to `Behaviour Validated`.
+
+Evidence may include:
+
+- user demonstrations or walkthroughs
+- stakeholder observations
+- screen recordings or prototype flows
+- operational behaviour traces
+- delivery team notes
+- assumption validation outcomes
+- unexpected behaviours discovered during implementation
+- implementation observations that weren't anticipated in the packet
+
+Evidence is not solely technical proof. Evidence validates whether the intended behaviour, value, and assumptions from the packet were accurate.
+
+The primary reference point is the **Proposed Agreement Boundary** (section 4.10 of the packet) — what people believed they were agreeing to when the packet was accepted.
+
+---
+
+## 10. Evaluation
+
+Evaluation is the process of comparing what was agreed against what was actually observed.
+
+Evaluation should consider:
+
+- Did the behaviour match what was described in the packet?
+- Which assumptions proved correct?
+- Which assumptions proved wrong or incomplete?
+- Were there behaviours or complexities not captured in the original framing?
+- What was learned about ambiguity that wasn't visible before implementation?
+- Did the capability slices generate the expected validation opportunity?
+- What would the packet have looked like if it had been written after, rather than before, implementation?
+
+Evaluation is NOT:
+
+- a governance review
+- a post-mortem
+- a performance audit
+- or a blame assignment exercise
+
+Evaluation IS:
+
+- a learning comparison
+- a continuity-of-intent check
+- a signal for future packet quality improvement
+
+Evaluation should remain lightweight. Three to five honest observations is sufficient. The objective is preserving useful learning — not comprehensive documentation.
+
+See [`vfp-guide.md`](./vfp-guide.md) section 4.18 for the post-delivery outcome record within the packet itself.
+
+---
+
+## 11. Methodology Improvement
+
+Patterns identified during evaluation should inform the methodology itself — how future packets are generated and how the framework evolves.
+
+Methodology improvement should be triggered by:
+
+- recurring assumption error patterns
+- ambiguities that were missed consistently
+- slices that failed to generate the expected validation opportunity
+- persistent gaps between intended and observed behaviour
+- common oversized slice patterns
+- recurring failure modes not captured in the current framework
+
+Methodology improvement is NOT automatic. It requires intentional human evaluation. Individual outliers should not trigger methodology changes — only confirmed, recurring patterns should evolve into updates.
+
+The objective is a methodology that improves progressively through operational evidence — not one that changes reactively after every packet.
+
+The repo is the canonical home for methodology. When a pattern is confirmed, update the relevant doc, commit, and push. Git history is the versioning system.

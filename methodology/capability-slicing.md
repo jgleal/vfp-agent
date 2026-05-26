@@ -1,4 +1,4 @@
-# Capability Slicing Principles v3
+# Capability Slicing Principles
 ## Behaviour-Driven Capability Progression & Adaptive Delivery Evolution
 
 ---

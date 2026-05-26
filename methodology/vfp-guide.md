@@ -1,4 +1,4 @@
-# Value Framing Packet Guide v2
+# Value Framing Packet Guide
 ## Operational Interpretation, Behavioural Framing & Packet Evolution
 
 ---
@@ -257,6 +257,25 @@ Questions should remain lightweight, useful, and behaviourally relevant — not 
 Ambiguity should not stop progression. The framework supports **bounded empirical continuation.**
 
 **Good:** "Prototype one behavioural slice focused on room availability visibility before implementing booking flows."
+
+---
+
+### 4.18 Validation Outcome *(post-delivery)*
+
+**Purpose:** Record what was actually observed after the slice or capability was implemented and validated. This section is completed after delivery — not during packet generation.
+
+**What to record:**
+
+- Observed behaviour vs. expected behaviour (compare with 4.3 and 4.10)
+- Assumption outcomes: which assumptions from 4.6 were confirmed, denied, or remain unresolved
+- What was missed or not captured in the original framing
+- What unexpected complexity was discovered
+- What the implementation actually taught the team
+- Whether the validation signals from 4.12 were achievable and useful
+
+**Why this matters:** The packet lifecycle ends at "Archived Learning." This section is the mechanism that makes that status meaningful. Without a validation outcome, "archived" is a dead end. With it, the packet becomes a traceable learning record and a future reference.
+
+**This section is intentionally lightweight.** Three to five honest observations is sufficient. The objective is preserving useful learning — not comprehensive documentation.
 
 ---
 

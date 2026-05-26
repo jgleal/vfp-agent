@@ -1,4 +1,4 @@
-# Risk & Uncertainty Operational Patterns v3
+# Risk & Uncertainty Operational Patterns
 ## Uncertainty Classification, Behavioural Detection & Adaptive Progression Guidance
 
 ---
