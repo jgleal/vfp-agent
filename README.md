@@ -10,35 +10,38 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 
 ```mermaid
 flowchart TD
-    A([Raw input]) --> B[VFP Agent]
-    B --> C[17-section VFP packet]
-    C --> D[Publish to Notion]
+    A([Raw input]) --> B[Generate VFP]:::agent
+    B --> C[17-section packet]
+    C --> D[Publish to Notion]:::agent
     D -- success --> E[(Notion page\nstatus: Draft)]
-    D -- unavailable --> F([Draft saved locally\nresume publishing\nwhen Notion is accessible])
-    E --> G[Delivery]
-    G --> H[Behaviour Validated]
-    H --> I[Retro · fill §4.18]
+    D -- unavailable --> F([Incomplete\nresume when Notion available])
+    E --> G[Deliver]:::human
+    G --> H[Mark: Behaviour Validated]:::human
+    H --> I[Retro · fill §4.18]:::collab
     I --> J([Archived Learning ✓\nmost VFPs end here])
 
-    I -.->|optional| K{Generalizable\nobservation?}
+    I -.->|optional| K{Worth generalising?}:::human
     K -- no --> L([Done])
-    K -- yes --> M[learning entry\nstatus: watching]
-    M -.->|next packet| N{Same pattern\nconfirmed in 2+ packets?}
+    K -- yes --> M[Add to learnings.md\nstatus: watching]:::human
+    M -.->|next packet| N{Pattern confirmed\nin 2+ packets?}:::human
     N -- not yet --> O([Keep watching])
-    N -- confirmed --> P["Agent: Level 3 draft\n(diff · PR description · evidence)"]
-    P --> Q[Human reviews\nand adjusts]
-    Q --> R[gh pr create\non jgleal/vfp-agent]
-    R --> S[gh pr merge]
-    S --> T[--update distributes\nto all installed users]
+    N -- confirmed --> P[Level 3 draft\ndiff · PR description]:::agent
+    P --> Q[Review and adjust]:::human
+    Q --> R[gh pr create]:::human
+    R --> S[gh pr merge]:::human
+    S --> T[--update distributes]:::agent
     T --> U([Core agent updated ✓])
+
+    classDef agent fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    classDef human fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef collab fill:#f3e8ff,stroke:#9333ea,color:#3b0764
 ```
 
-**Solid arrows** = the required path every VFP follows.
-**Dashed arrows** = optional extensions, triggered only when observations are worth preserving.
+**Blue** = agent &nbsp; **Yellow** = human &nbsp; **Purple** = both
 
-Publishing to Notion is a required step — a packet that hasn't been published is incomplete. If Notion is unavailable when the VFP is generated, the packet stays in Draft state locally and can be published later to complete the flow.
+**Solid arrows** = required path. &nbsp; **Dashed arrows** = optional.
 
-The core agent is updated only when a pattern is confirmed across multiple independent packets — not as a reaction to a single delivery.
+Publishing to Notion is required — an unpublished packet is incomplete. The core agent is updated only when a pattern is confirmed across multiple independent packets.
 
 ---
 
