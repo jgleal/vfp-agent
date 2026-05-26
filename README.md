@@ -10,6 +10,13 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 
 ---
 
+## Prerequisites
+
+- **Node.js ≥ 18** — required by the installer
+- **GitHub CLI (`gh`)** — required to fetch issues from private repositories as VFP input. For public repositories, the agent can fall back to webfetch, but `gh` is recommended in all cases (avoids rate limits, handles comments and labels). Install: https://cli.github.com
+
+---
+
 ## Flow
 
 ```mermaid

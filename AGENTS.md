@@ -171,3 +171,17 @@ Draft → Under Review → Needs Rework → Accepted for Exploration → In Deli
 - Do not treat Notion docs as canonical — the repo is the source of truth for methodology
 - Do not make the Notion publish step optional in the agent — it is required
 - Do not push the agent toward spec-writing, implementation planning, or completeness-over-clarity — that violates the behavioural framing design
+
+---
+
+## Runtime dependencies
+
+These are not installer dependencies — the installer uses Node.js stdlib only. These are dependencies of the agent's workflow at runtime.
+
+**GitHub CLI (`gh`)**
+Required to fetch issues from private repositories as VFP input. For public repositories, webfetch is a viable fallback but subject to unauthenticated API rate limits (60 req/hour) and does not provide access to comments, labels, or linked PRs. Use `gh` by default; fall back to webfetch only when `gh` is unavailable and the repo is confirmed public.
+
+```bash
+gh issue view <number> --repo <owner/repo>   # fetch issue as VFP input
+gh issue list --repo <owner/repo>            # browse open issues
+```
