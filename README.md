@@ -20,7 +20,7 @@ flowchart TD
         direction LR
         G1[Under Review]:::human --> G2[Accepted]:::human
         G2 --> G3[In Delivery]:::human
-        G1 -.->|rework| G1
+        G3 -.->|rework| G1
     end
 
     G3 --> H[Behaviour Validated]:::human
