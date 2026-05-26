@@ -272,18 +272,41 @@ When the user confirms they want to publish:
 
    **Page content — blocks in order:**
 
-   a. **Metadata block** — a `paragraph` block with each field on its own line, formatted with bold labels and rich text:
-      - `**Status:** Draft`
-      - `**Date:** [ISO date, e.g. 2026-05-26]` — rendered as a subtitle, not part of the title
-      - `**Source:** [GitHub issue URL as a hyperlink with label "GitHub Issue #N"]` — if the input came from a GitHub issue; omit this line if not
-      - Leave one blank paragraph after the metadata block to create visual separation
+   a. **Metadata block** — three separate `paragraph` blocks, each using `rich_text` annotations so the labels render in bold:
+      - Block 1: bold text `Status` + plain text `: Draft`
+      - Block 2: bold text `Date` + plain text `: [ISO date, e.g. 2026-05-26]`
+      - Block 3 (only if input came from a GitHub issue): bold text `Source` + plain text `: ` + linked text `GitHub Issue #N` (href = full issue URL)
+      - Follow with one empty `paragraph` block for visual separation
 
-   b. **Section blocks** — for each of the 17 sections (and §4.18 if it exists):
-      - Section title as a `heading_2` block using the section name only (e.g. "Request Summary"), without the `§4.N` prefix
-      - Section content as one or more `paragraph` blocks
-      - Use **bold** for key terms, signal names, risk classifications, and anything that benefits from emphasis within paragraphs
-      - For §4.6 (Assumptions), §4.7 (Ambiguities), §4.9 (Risk & Uncertainty Signals), §4.11 (Capability Slices), §4.12 (Validation Signals), and §4.16 (Questions for Stakeholders): use `bulleted_list_item` blocks for each item instead of a single paragraph block
-      - Leave a blank paragraph between each section for visual breathing room
+   b. **Section blocks** — use this layout for each section:
+
+      **Sections rendered open** (always visible — most important for readers):
+      - §4.1 Request Summary
+      - §4.10 Proposed Agreement Boundary
+      - §4.17 Recommended Next Step
+
+      For these: `heading_2` title (section name only, no `§4.N` prefix) followed by content as `paragraph` blocks. Use `rich_text` bold annotations for key terms, signal names, and anything that benefits from emphasis. Follow with one empty `paragraph` block.
+
+      **Sections rendered as `toggle` blocks** (collapsed by default — detail on demand):
+      - §4.2 Intended Outcome
+      - §4.3 Expected User Behaviour
+      - §4.4 Expected Value
+      - §4.5 Known Facts
+      - §4.6 Assumptions
+      - §4.7 Ambiguities & Undefined Areas
+      - §4.8 Scope Boundaries
+      - §4.9 Risk & Uncertainty Signals
+      - §4.11 Suggested Capability Slices
+      - §4.12 Validation Signals
+      - §4.13 Evidence Expectations
+      - §4.14 Prototype or Mock Validation
+      - §4.15 Delivery Handoff Notes
+      - §4.16 Questions for Stakeholders
+
+      For these: use a `toggle` block whose title is the section name (bold). Place the section content as children of the toggle:
+      - For §4.6, §4.7, §4.9, §4.11, §4.12, §4.16: children are `bulleted_list_item` blocks, one per item. Use `rich_text` bold annotations for classification labels (e.g. risk type names, assumption labels).
+      - For all other toggle sections: children are `paragraph` blocks.
+      - Follow each toggle with one empty `paragraph` block.
 
 3. **Return the Notion page URL** to the user.
 
@@ -381,7 +404,7 @@ Once §4.18 is confirmed, offer:
 
 > "Shall I update the VFP in Notion with this validation outcome and set the status to `Archived Learning`?"
 
-If yes and Notion MCP is available: append a `heading_2` block "Validation Outcome" followed by the §4.18 content as `paragraph` and `bulleted_list_item` blocks (use bullets for assumption outcomes and validation signal items). Then update the **Status** field in the metadata paragraph at the top of the page to `Archived Learning`.
+If yes and Notion MCP is available: append a `heading_2` block "Validation Outcome" followed by the §4.18 content — use `bulleted_list_item` blocks for assumption outcomes and validation signal items, `paragraph` blocks for the rest. Use `rich_text` bold annotations for key terms. Then update the `Status` metadata paragraph at the top of the page to `Archived Learning` (bold label, plain value).
 
 If Notion MCP is unavailable: provide the §4.18 text for the user to paste manually, and remind them to update the status to `Archived Learning`.
 
