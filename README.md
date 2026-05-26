@@ -9,24 +9,21 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 ## Flow
 
 ```mermaid
-flowchart TD
-    A([Raw input]) --> B[Generate VFP]:::agent
-    B --> C[17-section packet]
-    C --> D[Publish to Notion]:::agent
-    D -- success --> E[(Notion page\nstatus: Draft)]
-    D -- unavailable --> F([Incomplete — resume later])
+flowchart LR
+    A([Input]) --> B[Generate VFP]:::agent
+    B --> D[Publish to Notion]:::agent
+    D -- ok --> E[(Notion)]
+    D -- fail --> F([Incomplete])
     E --> G[Deliver]:::human
-    G --> H[Mark: Behaviour Validated]:::human
-    H --> I[Retro · fill §4.18]:::collab
-    I --> J([Archived Learning ✓])
-
-    I -.->|optional| K{Worth generalising?}:::human
-    K -- no --> L([Done])
+    G --> H[Behaviour Validated]:::human
+    H --> I[Retro]:::collab
+    I --> J([Archived ✓])
+    I -.->|optional| K{Generalise?}:::human
     K -- yes --> M[Record learning]:::agent
-    M -.->|pattern confirmed\nacross packets| P[Propose methodology change]:::collab
-    P --> Q[Change merged]:::human
-    Q --> R[--update distributes]:::agent
-    R --> S([Core agent updated ✓])
+    M -.->|confirmed| P[Propose change]:::collab
+    P --> Q[Merge]:::human
+    Q --> R[Distribute]:::agent
+    R --> S([Updated ✓])
 
     classDef agent fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
     classDef human fill:#fef9c3,stroke:#ca8a04,color:#713f12
@@ -35,7 +32,7 @@ flowchart TD
 
 **Blue** = agent &nbsp; **Yellow** = human &nbsp; **Purple** = both
 
-**Solid arrows** = required path. &nbsp; **Dashed arrows** = optional.
+**Solid** = required path. &nbsp; **Dashed** = optional.
 
 Publishing to Notion is required — an unpublished packet is incomplete. The core agent is updated only when a pattern is confirmed across multiple independent packets.
 
