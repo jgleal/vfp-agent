@@ -12,29 +12,31 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 flowchart TD
     A([Raw input]) --> B[VFP Agent]
     B --> C[17-section VFP packet]
-    C --> D{Publish to Notion?}
-    D -- yes --> E[(Notion page)]
-    D -- skip --> F
-    E --> F[Delivery]
-    F --> G[Behaviour Validated]
-    G --> H[Retro · fill §4.18]
-    H --> I([Archived Learning ✓\nmost VFPs end here])
+    C --> D[Publish to Notion]
+    D -- success --> E[(Notion page\nstatus: Draft)]
+    D -- unavailable --> F([Draft saved locally\nresume publishing\nwhen Notion is accessible])
+    E --> G["Delivery\nDraft → Accepted → In Delivery"]
+    G --> H[Behaviour Validated]
+    H --> I[Retro · fill §4.18]
+    I --> J([Archived Learning ✓\nmost VFPs end here])
 
-    H -.->|optional| J{Generalizable\nobservation?}
-    J -- no --> K([Done])
-    J -- yes --> L[learning entry\nstatus: watching]
-    L -.->|next packet| M{Same pattern\nconfirmed in 2+ packets?}
-    M -- not yet --> N([Keep watching])
-    M -- confirmed --> O["Agent: Level 3 draft\n(diff · PR description · evidence)"]
-    O --> P[Human reviews\nand adjusts]
-    P --> Q[gh pr create\non jgleal/vfp-agent]
-    Q --> R[gh pr merge]
-    R --> S[--update distributes\nto all installed users]
-    S --> T([Core agent updated ✓])
+    I -.->|optional| K{Generalizable\nobservation?}
+    K -- no --> L([Done])
+    K -- yes --> M[learning entry\nstatus: watching]
+    M -.->|next packet| N{Same pattern\nconfirmed in 2+ packets?}
+    N -- not yet --> O([Keep watching])
+    N -- confirmed --> P["Agent: Level 3 draft\n(diff · PR description · evidence)"]
+    P --> Q[Human reviews\nand adjusts]
+    Q --> R[gh pr create\non jgleal/vfp-agent]
+    R --> S[gh pr merge]
+    S --> T[--update distributes\nto all installed users]
+    T --> U([Core agent updated ✓])
 ```
 
-**Solid arrows** = the normal path every VFP follows.
+**Solid arrows** = the required path every VFP follows.
 **Dashed arrows** = optional extensions, triggered only when observations are worth preserving.
+
+Publishing to Notion is a required step — a packet that hasn't been published is incomplete. If Notion is unavailable when the VFP is generated, the packet stays in Draft state locally and can be published later to complete the flow.
 
 The core agent is updated only when a pattern is confirmed across multiple independent packets — not as a reaction to a single delivery.
 

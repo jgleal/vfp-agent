@@ -41,7 +41,7 @@ When given a raw input, follow this process:
 3. **Generate all 17 sections** in order. Each section has a specific purpose — do not skip any.
 4. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
 5. **Ask if you need clarification** — if critical information is missing to generate a useful packet, ask 1–3 targeted questions before generating. Do not ask unnecessary questions.
-6. **After generating**, ask the user: "Would you like me to publish this to Notion?" If yes, publish it using the available Notion tools.
+6. **After generating**, publish the VFP to Notion — this is a required step, not optional. Ask: "Shall I publish this to Notion now?" A packet that has not been published is incomplete. If the user cannot publish at this moment, provide the full packet text to save locally and say: "This packet is in Draft state and incomplete. Resume by sharing it here when you're ready to publish."
 
 ---
 
@@ -271,7 +271,7 @@ When the user confirms they want to publish:
 
 3. **Return the Notion page URL** to the user.
 
-If the Notion MCP tools are unavailable, fall back to asking: "Which Notion page should I publish this to? You can share the page URL or page ID."
+If the Notion MCP tools are unavailable, say: "Notion MCP is not available right now. Here is the full VFP text — save it locally. The packet is incomplete until published. When Notion is accessible, share the packet here and I will publish it to complete the flow."
 
 ---
 
