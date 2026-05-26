@@ -8,16 +8,20 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 
 ## Install
 
+### From the web (recommended)
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jgleal/vfp-agent/main/install.sh | bash
 ```
 
-Or from a local clone:
+### From a local clone
 
 ```bash
 git clone https://github.com/jgleal/vfp-agent
 node vfp-agent/bin/install.js
 ```
+
+### Interactive TUI
 
 Running without flags opens an **interactive TUI selector**. Detected tools are pre-selected and shown first. Use arrow keys to move, `space` to toggle, `a` to select/deselect all, `enter` to confirm, `q` to quit.
 
@@ -36,6 +40,47 @@ Available tools:
 ↑/↓ move  space toggle  a all/none  enter confirm  q quit
 ```
 
+### Installer flags
+
+```
+--all                  Install to all detected tools without prompting
+--only <id>            Install only to the specified tool (repeatable)
+--list                 List all supported tool IDs and exit
+--dry-run              Show what would happen without making changes
+--force                Overwrite existing files
+--uninstall, -u        Remove installed files
+--non-interactive      Skip all prompts (CI/automation)
+--no-color             Disable ANSI output
+--help, -h             Show help
+```
+
+### Uninstall
+
+```bash
+node bin/install.js --uninstall
+```
+
+Or for a specific tool:
+
+```bash
+node bin/install.js --only opencode --uninstall
+```
+
+### Manual installation — ChatGPT (Custom GPT)
+
+The VFP agent can be configured as a **Custom GPT** on ChatGPT. This is a manual web process, not covered by the CLI installer.
+
+1. Go to [chat.openai.com](https://chat.openai.com) → **Explore GPTs** → **Create**
+2. In **Instructions**, paste the contents of [`agents/vfp.md`](agents/vfp.md) (everything after the `---` frontmatter block)
+3. Set a name and description
+4. To enable Notion publishing, add a **Custom Action**:
+   - Import the Notion OpenAPI spec from `https://developers.notion.com/page/openapi`
+   - Set authentication to API Key (`Bearer <your-token>`)
+   - Enable the `search`, `createPage`, and `appendBlockChildren` operations
+5. Save and share
+
+Note: Notion pages must be explicitly shared with your integration for the agent to access them.
+
 ---
 
 ## Supported tools
@@ -52,25 +97,9 @@ Available tools:
 
 ---
 
-## Installer flags
-
-```
---all                  Install to all detected tools without prompting
---only <id>            Install only to the specified tool (repeatable)
---list                 List all supported tool IDs and exit
---dry-run              Show what would happen without making changes
---force                Overwrite existing files
---uninstall, -u        Remove installed files
---non-interactive      Skip all prompts (CI/automation)
---no-color             Disable ANSI output
---help, -h             Show help
-```
-
----
-
 ## Notion MCP setup
 
-The VFP agent publishes artefacts to Notion. The installer checks whether the Notion MCP server is configured for each selected tool. If not, it prompts once for a Notion integration token and patches the relevant config file automatically.
+The VFP agent publishes artefacts to Notion and can update existing VFP pages during retrospectives. The installer checks whether the Notion MCP server is configured for each selected tool. If not, it prompts once for a Notion integration token and patches the relevant config file automatically.
 
 **Get a token:** https://www.notion.so/my-integrations → create an integration → copy the token (`ntn_...`).
 
@@ -92,6 +121,8 @@ Gemini CLI and Codex CLI MCP config formats are not yet standardised — configu
 
 ## How the agent works
 
+### Generating a VFP
+
 Invoke with: *"generate a VFP"*, *"frame this request"*, *"create a value framing packet"*, or *"help me structure this delivery"*.
 
 The agent:
@@ -110,26 +141,17 @@ When you confirm you want to publish, the agent:
 3. The VFP is created as a new child page titled `VFP — [description] — [date]` with all 17 sections as structured blocks
 4. The agent returns the page URL
 
+### Running a retrospective
+
+After a VFP reaches `Behaviour Validated`, invoke the retrospective flow with: *"run a retro on this VFP"*, *"help me fill the validation outcome"*, or *"this has been delivered, let's capture learnings"*.
+
+The agent walks you through filling section 4.18 (Validation Outcome), updates the VFP in Notion, and helps extract learnings for the methodology log.
+
+See [`methodology/retro-procedure.md`](methodology/retro-procedure.md) for the full procedural guide.
+
 ### VFP status lifecycle
 
 `Draft` → `Under Review` → `Needs Rework` → `Accepted for Exploration` → `In Delivery` → `Behaviour Validated` → `Archived Learning`
-
----
-
-## Manual installation — ChatGPT (Custom GPT)
-
-The VFP agent can be configured as a **Custom GPT** on ChatGPT. This is a manual web process, not covered by the CLI installer.
-
-1. Go to [chat.openai.com](https://chat.openai.com) → **Explore GPTs** → **Create**
-2. In **Instructions**, paste the contents of [`agents/vfp.md`](agents/vfp.md) (everything after the `---` frontmatter block)
-3. Set a name and description
-4. To enable Notion publishing, add a **Custom Action**:
-   - Import the Notion OpenAPI spec from `https://developers.notion.com/page/openapi`
-   - Set authentication to API Key (`Bearer <your-token>`)
-   - Enable the `search`, `createPage`, and `appendBlockChildren` operations
-5. Save and share
-
-Note: Notion pages must be explicitly shared with your integration for the agent to access them.
 
 ---
 
@@ -139,7 +161,7 @@ Note: Notion pages must be explicitly shared with your integration for the agent
 agents/vfp.md          ← single source of truth (opencode frontmatter format)
 bin/install.js         ← installer: reads agents/vfp.md, transforms frontmatter per tool
 install.sh             ← curl-pipeable bash shim → delegates to bin/install.js via npx
-methodology/           ← canonical reference documents
+methodology/           ← canonical reference documents and operational logs
 ```
 
 The installer applies `transformContent()` at write time — the prompt body is never duplicated. Only the frontmatter header differs per tool:
@@ -152,9 +174,11 @@ The installer applies `transformContent()` at write time — the prompt body is 
 | VS Code | `description` + `user-invocable: true` |
 | Windsurf | no frontmatter — appended as plain block to `global_rules.md` |
 
+---
+
 ## Methodology docs
 
-The [`/methodology`](methodology/) directory contains the canonical reference documents this agent is built on:
+The [`/methodology`](methodology/) directory contains the canonical reference documents and operational logs this agent is built on:
 
 - [`core-methodology.md`](methodology/core-methodology.md) — AI-Native Delivery & Value Framing core principles (incl. evidence collection, evaluation, and retro-feedback loop)
 - [`vfp-guide.md`](methodology/vfp-guide.md) — full 17-section VFP template reference + post-delivery Validation Outcome (§4.18)
@@ -163,20 +187,8 @@ The [`/methodology`](methodology/) directory contains the canonical reference do
 - [`pilot-operational-model.md`](methodology/pilot-operational-model.md) — pilot operating model: roles, ceremonies, cadence, escalation
 - [`validation-evidence-patterns.md`](methodology/validation-evidence-patterns.md) — evidence collection patterns for behavioural validation
 - [`example-library.md`](methodology/example-library.md) — worked VFP examples (grows through operational learning)
-
----
-
-## Uninstall
-
-```bash
-node bin/install.js --uninstall
-```
-
-Or for a specific tool:
-
-```bash
-node bin/install.js --only opencode --uninstall
-```
+- [`retro-procedure.md`](methodology/retro-procedure.md) — step-by-step retrospective procedure: when to raise, what to update, how learnings are stored
+- [`learnings.md`](methodology/learnings.md) — running log of confirmed patterns extracted from VFP validation outcomes
 
 ---
 
