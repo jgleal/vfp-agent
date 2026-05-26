@@ -9,13 +9,21 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 ## Flow
 
 ```mermaid
-flowchart LR
+flowchart TD
     A([Input]) --> B[Generate VFP]:::agent
     B --> D[Publish to Notion]:::agent
     D -- ok --> E[(Notion)]
     D -- fail --> F([Incomplete])
-    E --> G[Deliver]:::human
-    G --> H[Behaviour Validated]:::human
+    E --> G1
+
+    subgraph del[Delivery]
+        direction LR
+        G1[Under Review]:::human --> G2[Accepted]:::human
+        G2 --> G3[In Delivery]:::human
+        G1 -.->|rework| G1
+    end
+
+    G3 --> H[Behaviour Validated]:::human
     H --> I[Retro]:::collab
     I --> J([Archived ✓])
     I -.->|optional| K{Generalise?}:::human
