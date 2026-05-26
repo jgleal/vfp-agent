@@ -6,11 +6,71 @@ This file provides the context an AI agent needs to work effectively on `vfp-age
 
 ## What this project is
 
-`vfp-agent` is an installable AI agent that generates Value Framing Packets (VFPs) — structured 17-section artefacts that expose behavioural intent, surface uncertainty, and define the smallest meaningful validation slice for a delivery request. It also guides retrospectives after delivery to close the packet lifecycle and feed learning back into the methodology.
-
-The agent installs to 7 AI tools via a single interactive Node.js installer. No npm runtime dependencies.
+`vfp-agent` is an installable AI agent that generates Value Framing Packets (VFPs) and guides retrospectives. It installs to 7 AI tools via a single interactive Node.js installer. No npm runtime dependencies.
 
 GitHub: `https://github.com/jgleal/vfp-agent`
+
+---
+
+## Design — why this agent exists and how it thinks
+
+### The core problem
+
+Delivery teams consistently underestimate requests not because they lack information, but because they frame them in implementation terms before understanding the behaviour they are trying to change. A ticket that says "add booking system" conceals who does what, what changes in their world, what uncertainty exists, and what the smallest meaningful thing to validate would be.
+
+The VFP agent exists to intervene at the framing stage — before work starts — and make that hidden complexity visible, bounded, and usable.
+
+### What a VFP is
+
+A Value Framing Packet is a structured 17-section artefact. It is not a spec. It is not a requirements document. It is a framing instrument that:
+
+- Interprets the **behavioural intent** behind a request (not its implementation)
+- Surfaces **assumptions** as visible, challengeable items — not failures to be resolved before starting
+- Identifies **ambiguity** without letting it block progression
+- Defines the **smallest meaningful validation slice** that will generate useful learning
+- Makes **uncertainty usable** rather than trying to eliminate it
+
+The objective is never to eliminate uncertainty before progression. The objective is to make uncertainty visible, bounded, and usable.
+
+### What the agent is — and is not
+
+The agent is a **behavioural framing specialist**. It is not a requirements analyst, not a technical architect, not a project manager.
+
+This distinction matters when working on the agent. Changes that push it toward spec-writing, implementation planning, or completeness-over-clarity violate the design. A VFP that reads like a PRD has failed.
+
+### The 17-section structure
+
+Each section has a specific purpose. The most important is **§4.10 Proposed Agreement Boundary** — it defines what people currently believe they are agreeing to. It is a continuity-of-intent reference, not a full specification.
+
+§4.18 (Validation Outcome) is filled during the retrospective, not at generation time.
+
+### The retrospective and why it closes the loop
+
+The retro is not a performance review. It is the moment where a delivered packet is examined for what the framing got right, what it missed, and what the team now understands that they did not before. This learning is the fuel for improving the methodology.
+
+The retro produces three levels of output:
+
+| Level | What | When |
+|---|---|---|
+| 1 | §4.18 Validation Outcome written to Notion, status → `Archived Learning` | Every retro |
+| 2 | Learning entry added to `methodology/learnings.md` as `watching` | When a generalisable pattern is observed |
+| 3 | Methodology doc updated via PR, entry → `methodology-updated` | When a pattern is `confirmed` across 2+ independent packets |
+
+Level 3 is intentionally gated. Single-event observations never change the methodology. The agent proposes the change and produces the PR artifact — the human reviews, adjusts if needed, and merges. This preserves the reasoning alongside the diff.
+
+### The learning loop
+
+```
+Retro → learnings.md (watching) → second packet confirms → learnings.md (confirmed)
+→ agent produces Level 3 draft (diff + PR description) → human opens PR → merges
+→ learnings.md (methodology-updated) → --update distributes to all users
+```
+
+This loop is the mechanism by which real-world delivery experience improves the methodology. It must remain intact. Do not short-circuit it by updating methodology docs directly from a single observation.
+
+### Why Notion publish is required
+
+Publishing to Notion is not a convenience feature. It is the step that makes a packet accessible to the team and anchors it in the delivery record. A packet that exists only in a chat session has no continuity. If Notion MCP is unavailable, the packet must stay in explicit Draft/incomplete state with a clear resume path — not silently skipped.
 
 ---
 
@@ -37,7 +97,7 @@ AGENTS.md                  # This file
 
 ---
 
-## Key design decisions
+## Key technical decisions
 
 **Single source of truth for the prompt**
 `agents/vfp.md` is the only place the VFP prompt body exists. The installer reads it and transforms the frontmatter per target tool at write time. The body is never duplicated. Do not edit tool-specific output files directly — edit `agents/vfp.md`.
@@ -56,9 +116,6 @@ Reads `~/.config/vfp-agent/state.json` (`{ sha, tools, installedAt }`), fetches 
 
 **State file location**
 `~/.config/vfp-agent/state.json` on macOS/Linux. `%APPDATA%\vfp-agent\state.json` on Windows. Written after a successful install. Read by `--update`.
-
-**Notion publish is required**
-Publishing a generated VFP to Notion is a required step in the packet lifecycle — not optional. A packet that has not been published is in Draft state and incomplete. The agent must make this clear. Notion page selection happens at publish time, not install time.
 
 **Methodology changes are gated**
 `methodology/` docs are only updated at Level 3: confirmed pattern across 2+ independent packets, via PR. Single-event observations go to `learnings.md` as `watching`. The agent proposes changes but does not apply them — human reviews and merges via `gh pr create`.
@@ -106,17 +163,6 @@ Draft → Under Review → Needs Rework → Accepted for Exploration → In Deli
 
 ---
 
-## Learning-to-PR pipeline
-
-1. Retro produces a learning entry → written to `learnings.md` as `watching`
-2. Second independent packet confirms the same pattern → status → `confirmed`
-3. Agent produces a Level 3 draft: target file, before/after diff, PR description
-4. Human runs: `git checkout -b learning/[slug]` → applies diff → `gh pr create` → `gh pr merge`
-5. Learning entry updated to `methodology-updated`
-6. Any user with the agent installed can run `--update` to receive the change
-
----
-
 ## What not to do
 
 - Do not duplicate the prompt body in tool-specific files
@@ -124,3 +170,4 @@ Draft → Under Review → Needs Rework → Accepted for Exploration → In Deli
 - Do not update `methodology/` docs from a single observation — use `learnings.md` first
 - Do not treat Notion docs as canonical — the repo is the source of truth for methodology
 - Do not make the Notion publish step optional in the agent — it is required
+- Do not push the agent toward spec-writing, implementation planning, or completeness-over-clarity — that violates the behavioural framing design
