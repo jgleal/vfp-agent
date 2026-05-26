@@ -266,34 +266,60 @@ When the user confirms they want to publish:
    Which page should the VFP be published under? (enter a number, or type a name to search)
    ```
 
-2. **Create the VFP** as a new child page of the selected page:
-   - **Title:** `VFP — [brief description of the request]`
-   - **Content:** The full 17-section VFP structured as blocks — each section title as a `heading_2` block (use the section name only, without the `§` number prefix) followed by the section content as `paragraph` blocks.
+2. **Create the VFP** as a new child page of the selected page, using this exact structure:
+
+   **Page title:** `VFP — [brief description of the request]`
+
+   **Page content — blocks in order:**
+
+   a. **Metadata block** — a `paragraph` block with each field on its own line, formatted with bold labels and rich text:
+      - `**Status:** Draft`
+      - `**Date:** [ISO date, e.g. 2026-05-26]` — rendered as a subtitle, not part of the title
+      - `**Source:** [GitHub issue URL as a hyperlink with label "GitHub Issue #N"]` — if the input came from a GitHub issue; omit this line if not
+      - Leave one blank paragraph after the metadata block to create visual separation
+
+   b. **Section blocks** — for each of the 17 sections (and §4.18 if it exists):
+      - Section title as a `heading_2` block using the section name only (e.g. "Request Summary"), without the `§4.N` prefix
+      - Section content as one or more `paragraph` blocks
+      - Use **bold** for key terms, signal names, risk classifications, and anything that benefits from emphasis within paragraphs
+      - For §4.6 (Assumptions), §4.7 (Ambiguities), §4.9 (Risk & Uncertainty Signals), §4.11 (Capability Slices), §4.12 (Validation Signals), and §4.16 (Questions for Stakeholders): use `bulleted_list_item` blocks for each item instead of a single paragraph block
+      - Leave a blank paragraph between each section for visual breathing room
 
 3. **Return the Notion page URL** to the user.
 
-4. **Comment on the source GitHub issue** — if the input came from a GitHub issue, post a comment linking to the published VFP. The comment must include:
-   - A direct link to the Notion page
-   - A brief summary (2–4 sentences) drawn from §4.1 Request Summary and §4.10 Proposed Agreement Boundary — enough context for someone reading the issue to understand what the packet covers without opening Notion
-   - The issue URL as the source reference (format: `https://github.com/<owner>/<repo>/issues/<number>`)
+4. **Comment on the source GitHub issue** — if the input came from a GitHub issue, post a comment linking to the published VFP immediately after publishing. Run this automatically — do not ask permission.
 
-   ```bash
-   gh issue comment <number> --repo <owner/repo> --body "VFP published: <notion-url>
+   Compose the comment body using the generated packet content directly — do not use generic placeholder text. The comment must be useful to someone reading the issue without opening Notion:
 
-   [2–4 sentence summary from §4.1 and §4.10]
+   ```
+   ## VFP Published
 
-   Source: https://github.com/<owner>/<repo>/issues/<number>"
+   [1–2 sentences from §4.1 reframing the behavioural intent — surface the non-obvious complexity or reframe if the request is larger than it appears]
+
+   **Main risk signals**
+   [2–4 bullets from §4.9, each with its classification in bold and a one-sentence explanation drawn from the packet]
+
+   **Recommended next step**
+   [1–2 sentences from §4.17 — the single best next action]
+
+   ---
+
+   📄 Full Value Framing Packet: [notion-url]
    ```
 
-   Run this automatically after publishing — do not ask permission. If the input was not a GitHub issue, skip this step silently. If `gh` is unavailable, inform the user:
+   Then post it:
 
-   > "`gh` is not installed — could not comment on the issue. To do it manually:
+   ```bash
+   gh issue comment <number> --repo <owner/repo> --body "<composed body above>"
+   ```
+
+   If the input was not a GitHub issue, skip this step silently.
+
+   If `gh` is unavailable, inform the user:
+
+   > "`gh` is not installed — could not comment on the issue. To do it manually, run:
    > ```bash
-   > gh issue comment <number> --repo <owner/repo> --body "VFP published: <notion-url>
-   >
-   > [2–4 sentence summary from §4.1 and §4.10]
-   >
-   > Source: https://github.com/<owner>/<repo>/issues/<number>"
+   > gh issue comment <number> --repo <owner/repo> --body "<composed body above>"
    > ```"
 
 If the Notion MCP tools are unavailable, say: "Notion MCP is not available right now. Here is the full VFP text — save it locally. The packet is incomplete until published. When Notion is accessible, share the packet here and I will publish it to complete the flow."
@@ -355,7 +381,7 @@ Once §4.18 is confirmed, offer:
 
 > "Shall I update the VFP in Notion with this validation outcome and set the status to `Archived Learning`?"
 
-If yes and Notion MCP is available: update §4.18 content and the packet status field.
+If yes and Notion MCP is available: append a `heading_2` block "Validation Outcome" followed by the §4.18 content as `paragraph` and `bulleted_list_item` blocks (use bullets for assumption outcomes and validation signal items). Then update the **Status** field in the metadata paragraph at the top of the page to `Archived Learning`.
 
 If Notion MCP is unavailable: provide the §4.18 text for the user to paste manually, and remind them to update the status to `Archived Learning`.
 
