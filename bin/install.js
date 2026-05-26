@@ -416,9 +416,57 @@ function removeBlock(dest, dry) {
 }
 
 // ── JSON config helpers ────────────────────────────────────────────────────
+
+// Minimal JSONC parser: strips // line comments, /* */ block comments, and
+// trailing commas before } or ]. Handles strings correctly (won't strip
+// comment-like sequences inside quoted values).
+function parseJsonc(text) {
+  let i = 0;
+  let out = '';
+  while (i < text.length) {
+    // Quoted string — copy verbatim, respecting escape sequences.
+    if (text[i] === '"') {
+      let j = i + 1;
+      while (j < text.length) {
+        if (text[j] === '\\') { j += 2; continue; }
+        if (text[j] === '"') { j++; break; }
+        j++;
+      }
+      out += text.slice(i, j);
+      i = j;
+    // Block comment /* ... */
+    } else if (text[i] === '/' && text[i + 1] === '*') {
+      let j = i + 2;
+      while (j < text.length - 1 && !(text[j] === '*' && text[j + 1] === '/')) j++;
+      i = j + 2;
+    // Line comment // ...
+    } else if (text[i] === '/' && text[i + 1] === '/') {
+      let j = i + 2;
+      while (j < text.length && text[j] !== '\n') j++;
+      i = j;
+    } else {
+      out += text[i++];
+    }
+  }
+  // Remove trailing commas before } or ]
+  out = out.replace(/,(\s*[}\]])/g, '$1');
+  return JSON.parse(out);
+}
+
+// Returns parsed object, or null if the file doesn't exist.
+// Throws with a clear message if the file exists but can't be parsed —
+// this prevents silently overwriting valid config with an empty object.
 function readJson(file) {
   if (!fs.existsSync(file)) return {};
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return {}; }
+  const text = fs.readFileSync(file, 'utf8');
+  try {
+    return parseJsonc(text);
+  } catch (e) {
+    throw new Error(
+      `Cannot parse ${file}: ${e.message}\n` +
+      `  Fix the file manually, then re-run the installer.`
+    );
+  }
 }
 
 function writeJson(file, data) {
@@ -519,6 +567,7 @@ async function interactiveSelect(detected, all, c, opts) {
       resolved = true;
       process.stdin.removeListener('data', onData);
       process.stdin.setRawMode(false);
+      process.stdin.pause();
       process.stdout.write('\x1b[?25h\n'); // restore cursor + blank line
       resolve(result);
     }
@@ -586,15 +635,29 @@ async function installProvider(prov, ctx) {
       if (!opts.dryRun && !opts.nonInteractive) {
         let token = sharedNotionToken.value;
         if (!token) {
-          token = await prompt('  Notion integration token (ntn_...): ');
+          process.stdout.write('\n');
+          process.stdout.write('  The VFP agent publishes artefacts to Notion. To enable this:\n');
+          process.stdout.write('\n');
+          process.stdout.write('    1. Open https://www.notion.so/my-integrations\n');
+          process.stdout.write('    2. Click "New integration" → give it a name → Save\n');
+          process.stdout.write('    3. Copy the "Internal Integration Token" (starts with ntn_)\n');
+          process.stdout.write('    4. After install, open your VFP workspace page in Notion\n');
+          process.stdout.write('       → Share → Invite → select your integration\n');
+          process.stdout.write('\n');
+          token = await prompt('  Paste token (or press Enter to skip): ');
           if (token) sharedNotionToken.value = token;
         }
-        if (token) installNotionMcp(id, token, false);
-        else note('  Skipped — configure Notion MCP manually later.');
+        if (token) {
+          installNotionMcp(id, token, false);
+        } else {
+          note('  Skipped. To configure later, re-run:');
+          note(`    node bin/install.js --only ${id} --force`);
+        }
       } else if (opts.dryRun) {
         installNotionMcp(id, '<token>', true);
       } else {
-        note('  Run without --non-interactive to configure Notion MCP.');
+        note('  Notion MCP not configured. To add it, re-run without --non-interactive:');
+        note('    node bin/install.js --only ' + id + ' --force');
       }
     }
   }
@@ -780,6 +843,7 @@ async function main() {
   }
 
   if (results.failed.length) process.exit(1);
+  process.exit(0);
 }
 
 main().catch(e => { process.stderr.write(e.message + '\n'); process.exit(1); });

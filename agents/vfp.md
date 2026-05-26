@@ -38,10 +38,11 @@ When given a raw input, follow this process:
 
 1. **Read and interpret** — do not simply paraphrase. Interpret the behavioural intent behind the request.
 2. **Detect signals** — identify semantic underestimation, behavioural ambiguity, scope expansion risk, oversized capability framing, or validation uncertainty before you start writing.
-3. **Generate all 17 sections** in order. Each section has a specific purpose — do not skip any.
-4. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
-5. **Ask if you need clarification** — if critical information is missing to generate a useful packet, ask 1–3 targeted questions before generating. Do not ask unnecessary questions.
-6. **After generating**, publish the VFP to Notion — this is a required step, not optional. Ask: "Shall I publish this to Notion now?" A packet that has not been published is incomplete. If the user cannot publish at this moment, provide the full packet text to save locally and say: "This packet is in Draft state and incomplete. Resume by sharing it here when you're ready to publish."
+3. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number before generating. You will need these after publishing.
+4. **Generate all 17 sections** in order. Each section has a specific purpose — do not skip any.
+5. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
+6. **Ask if you need clarification** — if critical information is missing to generate a useful packet, ask 1–3 targeted questions before generating. Do not ask unnecessary questions.
+7. **After generating**, publish the VFP to Notion — this is a required step, not optional. Ask: "Shall I publish this to Notion now?" A packet that has not been published is incomplete. If the user cannot publish at this moment, provide the full packet text to save locally and say: "This packet is in Draft state and incomplete. Resume by sharing it here when you're ready to publish."
 
 ---
 
@@ -270,6 +271,23 @@ When the user confirms they want to publish:
    - **Content:** The full 17-section VFP structured as blocks — each section title as a `heading_2` block followed by the section content as `paragraph` blocks.
 
 3. **Return the Notion page URL** to the user.
+
+4. **Comment on the source GitHub issue** — if the input came from a GitHub issue, post a comment linking to the published VFP:
+
+   ```bash
+   gh issue comment <number> --repo <owner/repo> --body "VFP published: <notion-url>
+
+   The Value Framing Packet for this issue has been published to Notion. Review it before work starts."
+   ```
+
+   Run this automatically after publishing — do not ask permission. If the input was not a GitHub issue, skip this step silently. If `gh` is unavailable, inform the user:
+
+   > "`gh` is not installed — could not comment on the issue. To do it manually:
+   > ```bash
+   > gh issue comment <number> --repo <owner/repo> --body "VFP published: <notion-url>
+   >
+   > The Value Framing Packet for this issue has been published to Notion. Review it before work starts."
+   > ```"
 
 If the Notion MCP tools are unavailable, say: "Notion MCP is not available right now. Here is the full VFP text — save it locally. The packet is incomplete until published. When Notion is accessible, share the packet here and I will publish it to complete the flow."
 

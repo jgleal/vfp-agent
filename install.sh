@@ -37,7 +37,12 @@ fi
 # default to empty so the curl-pipe path falls through cleanly.
 here="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd)" || here=""
 if [ -n "$here" ] && [ -f "$here/bin/install.js" ]; then
-  exec node "$here/bin/install.js" "$@"
+  # Reconnect stdin to the terminal so the interactive TUI works when piped (curl | bash).
+  if [ -c /dev/tty ]; then
+    exec node "$here/bin/install.js" "$@" </dev/tty
+  else
+    exec node "$here/bin/install.js" "$@"
+  fi
 fi
 
 if ! command -v npx >/dev/null 2>&1; then
@@ -45,4 +50,9 @@ if ! command -v npx >/dev/null 2>&1; then
   exit 1
 fi
 
-exec npx -y "github:$REPO" "$@"
+# Reconnect stdin to the terminal so the interactive TUI works when piped (curl | bash).
+if [ -c /dev/tty ]; then
+  exec npx -y "github:$REPO" "$@" </dev/tty
+else
+  exec npx -y "github:$REPO" "$@"
+fi
