@@ -45,7 +45,7 @@ AGENTS.md                  # This file
 **Zero npm runtime dependencies**
 The installer uses Node.js stdlib only. No dependencies in `package.json`. This is intentional and must be preserved. The installer runs via `npx` (dev tooling, not runtime).
 
-**Caveman installer pattern**
+**Zero-dependency Node installer**
 `install.sh` is a one-line curl-pipeable shim: `exec npx -y "github:jgleal/vfp-agent" "$@"`. All logic lives in `bin/install.js`. The shim must stay minimal.
 
 **Interactive TUI as default**
