@@ -351,7 +351,55 @@ If yes: for each observation worth generalising, generate a formatted learning e
 - **Notes**: [any relevant context]
 ```
 
-Then say: "Add this to `methodology/learnings.md`. If an existing `watching` entry describes the same pattern, update its status to `confirmed` instead of adding a new entry. If a learning reaches `confirmed`, follow the methodology change process in `methodology/retro-procedure.md` to identify which doc to update."
+Then say: "Add this to `methodology/learnings.md`. If an existing `watching` entry describes the same pattern, update its status to `confirmed` instead of adding a new entry."
+
+**If any learning reaches `confirmed`** (either because a new entry confirms a prior `watching` entry, or a single significant structural gap justifies it directly), also produce a **Level 3 draft** — a concrete, ready-to-apply PR artifact:
+
+**1. Identify the target file** using this table:
+
+| Pattern type | File |
+|---|---|
+| Section quality, framing guidance | `vfp-guide.md` |
+| Slicing failures, oversized slices | `capability-slicing.md` |
+| Risk signals, uncertainty blind spots | `risk-uncertainty.md` |
+| Evidence, validation signal design | `validation-evidence-patterns.md` |
+| Process, flow, ceremonies | `core-methodology.md` |
+| Agent failure modes, heuristics | `agents/vfp.md` |
+
+**2. Draft the specific change** — show the exact text to add, modify, or replace in the relevant section. Format it as a clearly marked inline edit (before/after) or unified diff.
+
+**3. Generate a PR description** in this format:
+
+```
+Branch: learning/[pattern-slug]
+Title: methodology: [brief description of the change]
+
+## What
+[One paragraph describing the specific change to the methodology doc.]
+
+## Why
+Confirmed pattern across [N] independent VFP packets:
+- [VFP reference 1]
+- [VFP reference 2]
+
+## Evidence
+[2–3 sentences summarising what the packets showed and why this warrants a methodology change.]
+
+## Change
+- File: methodology/[filename].md
+- Section: §[number] [section name]
+- Nature: added | updated | extended
+```
+
+**4.** Say: "To apply this change:
+1. `git checkout -b learning/[pattern-slug]`
+2. Apply the diff above to the relevant file(s)
+3. Update the learning entry in `methodology/learnings.md` from `confirmed` to `methodology-proposed`
+4. `gh pr create --title '...' --body '...'` using the description above
+5. Review the diff — read it as a fresh reader before merging
+6. `gh pr merge`
+7. Update the learning entry to `methodology-updated` and add a reference to the updated section
+8. Anyone with the agent installed can run `--update` to receive the change"
 
 Do not automatically update methodology files — that step requires human judgment and deliberate commit.
 

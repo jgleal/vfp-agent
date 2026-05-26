@@ -13,8 +13,9 @@ Entries here represent patterns observed in practice — not theory. The methodo
 3. Check existing entries below for a matching pattern
    - If a match exists at `watching`: update its status to `confirmed` and add the new source packet
    - If no match: add a new entry with status `watching`
-4. If any entry reaches `confirmed`: apply the methodology change and update the entry to `methodology-updated`
-5. Commit the file
+4. If any entry reaches `confirmed`: the agent produces a Level 3 draft (diff + PR description). Apply it via PR and update the entry to `methodology-proposed`.
+5. When the PR is merged: update the entry to `methodology-updated`
+6. Commit the file at each status change
 
 ---
 
@@ -25,8 +26,8 @@ Entries here represent patterns observed in practice — not theory. The methodo
 - **Pattern type**: framing | slicing | validation | assumptions | process | evidence
 - **Signal**: one-sentence description of the recurring observation
 - **Source packets**: VFP title or reference, date
-- **Status**: watching | confirmed | methodology-updated
-- **Methodology change**: section(s) updated, if applicable
+- **Status**: watching | confirmed | methodology-proposed | methodology-updated
+- **Methodology change**: section(s) updated, PR link (if applicable)
 - **Notes**: context, nuance, or related methodology sections
 ```
 
@@ -35,8 +36,9 @@ Entries here represent patterns observed in practice — not theory. The methodo
 | Status | Meaning |
 |--------|---------|
 | `watching` | First observation. No action yet — waiting for a second independent occurrence. |
-| `confirmed` | Observed in 2+ independent packets. Methodology change is now warranted. |
-| `methodology-updated` | Change has been applied to the relevant doc. Learning is closed. |
+| `confirmed` | Observed in 2+ independent packets. Produce a Level 3 draft and open a PR. |
+| `methodology-proposed` | PR is open proposing the change. Awaiting review and merge. |
+| `methodology-updated` | PR merged. The relevant methodology doc is updated. Learning is closed. |
 
 ---
 

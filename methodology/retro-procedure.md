@@ -93,8 +93,9 @@ If yes to any of the above: extract a learning entry.
 | Status | Meaning |
 |--------|---------|
 | `watching` | First time this pattern has been observed. Noted, no action yet. |
-| `confirmed` | Pattern observed independently in 2 or more packets. Methodology change is now warranted. |
-| `methodology-updated` | The relevant methodology doc has been updated. Learning is closed. |
+| `confirmed` | Pattern observed independently in 2 or more packets. A Level 3 draft should be produced and a PR opened. |
+| `methodology-proposed` | A PR has been opened proposing the methodology change. Awaiting review and merge. |
+| `methodology-updated` | The PR has been merged. The relevant methodology doc is updated. Learning is closed. |
 
 When adding a new learning, always check whether an existing `watching` entry in `learnings.md` describes the same pattern. If yes: update its status to `confirmed` rather than adding a duplicate.
 
@@ -102,9 +103,9 @@ When adding a new learning, always check whether an existing `watching` entry in
 
 ### Level 3 — Methodology Change
 
-**What:** An update to one or more `methodology/*.md` files, and potentially `agents/vfp.md` if the pattern affects how VFPs are generated.
+**What:** An update to one or more `methodology/*.md` files, and potentially `agents/vfp.md` if the pattern affects how VFPs are generated. The change is proposed via a PR — even for a single-author repo. The PR preserves the reasoning alongside the diff and creates a clean reversion path if a learning turns out to be wrong.
 
-**Where stored:** Git commit on `main`. Git history is the versioning system.
+**Where stored:** Merged PR on `main`. GitHub preserves the PR description as permanent record of why the change was made. `--update` distributes the merged change to all installed users.
 
 **When:** A learning entry reaches `confirmed` status (2+ independent packets showing the same pattern).
 
@@ -121,11 +122,22 @@ When adding a new learning, always check whether an existing `watching` entry in
 | Process, flow, ceremonies | `core-methodology.md` |
 | Agent failure modes, heuristics, detection | `agents/vfp.md` |
 
-Multiple files may be updated for a single confirmed pattern. After applying the change:
+Multiple files may be updated for a single confirmed pattern.
 
-1. Update the learning entry status in `learnings.md` from `confirmed` to `methodology-updated`
-2. Add a reference to the section(s) updated in the learning entry
-3. Commit everything in a single commit with a clear message (e.g. `methodology: update slicing guidance — confirmed oversized-slice pattern`)
+**The agent produces a Level 3 draft** when a learning reaches `confirmed`. This draft contains:
+- The specific change to make (before/after or diff format)
+- A ready-to-use PR title and description with evidence summary
+
+**To apply the change:**
+
+1. Review the agent's draft — adjust if the proposed wording needs correction
+2. `git checkout -b learning/[pattern-slug]`
+3. Apply the change to the relevant file(s)
+4. Update the learning entry in `learnings.md` from `confirmed` to `methodology-proposed`
+5. `gh pr create --title '...' --body '...'` using the generated description
+6. Review the diff as a fresh reader before merging
+7. `gh pr merge`
+8. Update the learning entry from `methodology-proposed` to `methodology-updated`, adding a reference to the section(s) changed
 
 ---
 
@@ -187,15 +199,21 @@ For each observation worth preserving:
 
 ---
 
-**Step 6 — Apply methodology changes if warranted**
+**Step 6 — Apply methodology change via PR**
 
-If any learning reached `confirmed` (either now or in a previous retro):
+If any learning reached `confirmed` (either now or in a previous retro), the agent will have produced a Level 3 draft. If running the retro manually:
 
 1. Identify the relevant methodology file(s) using the pattern-type table in Section 3
-2. Apply the change — update the relevant section, add a signal, correct guidance, or extend a failure mode list
-3. If the pattern affects agent generation quality: also update `agents/vfp.md` (failure modes list, heuristic signals, or section guidance)
-4. Update the learning entry status to `methodology-updated` with a reference to the updated section
-5. Commit all changes together
+2. Draft the specific change — the exact text to add, modify, or replace
+3. If the pattern affects agent generation quality: also update `agents/vfp.md` (failure modes, heuristic signals, section guidance)
+4. Create a branch: `git checkout -b learning/[pattern-slug]`
+5. Apply the change
+6. Update the learning entry in `learnings.md` from `confirmed` to `methodology-proposed`
+7. Open the PR: `gh pr create --title 'methodology: [brief description]' --body '...'`. Include in the body: what changed, why (the confirmed pattern), and which packets provided the evidence.
+8. Review the diff — read it as a fresh reader, not as the author
+9. `gh pr merge`
+10. Update the learning entry from `methodology-proposed` to `methodology-updated`. Add a reference to the section(s) changed.
+11. Anyone with the agent installed can now run `--update` to receive the change
 
 ---
 
@@ -215,10 +233,11 @@ The agent will:
 3. Generate the §4.18 content for review
 4. Offer to update the VFP in Notion and set the status to `Archived Learning`
 5. Ask whether any insights from §4.18 are worth extracting as learning entries
-6. If yes: generate formatted learning entries and offer to check against existing `learnings.md` patterns
+6. If yes: generate formatted learning entries and check against existing `learnings.md` patterns
 7. Flag if any new entry matches an existing `watching` pattern (potential `confirmed` upgrade)
+8. If any learning reaches `confirmed`: produce a Level 3 draft — a specific diff against the relevant methodology file(s) and a ready-to-use PR title + description
 
-The agent does not automatically update `methodology/*.md` files — that step requires human judgment and deliberate commit.
+The agent does not automatically update `methodology/*.md` files — that step requires human judgment and deliberate commit. The Level 3 draft is a proposal for the human to review, adjust, and apply via PR.
 
 ---
 
