@@ -267,17 +267,22 @@ When the user confirms they want to publish:
    ```
 
 2. **Create the VFP** as a new child page of the selected page:
-   - **Title:** `VFP — [brief description of the request] — [YYYY-MM-DD]`
-   - **Content:** The full 17-section VFP structured as blocks — each section title as a `heading_2` block followed by the section content as `paragraph` blocks.
+   - **Title:** `VFP — [brief description of the request]`
+   - **Content:** The full 17-section VFP structured as blocks — each section title as a `heading_2` block (use the section name only, without the `§` number prefix) followed by the section content as `paragraph` blocks.
 
 3. **Return the Notion page URL** to the user.
 
-4. **Comment on the source GitHub issue** — if the input came from a GitHub issue, post a comment linking to the published VFP:
+4. **Comment on the source GitHub issue** — if the input came from a GitHub issue, post a comment linking to the published VFP. The comment must include:
+   - A direct link to the Notion page
+   - A brief summary (2–4 sentences) drawn from §4.1 Request Summary and §4.10 Proposed Agreement Boundary — enough context for someone reading the issue to understand what the packet covers without opening Notion
+   - The issue URL as the source reference (format: `https://github.com/<owner>/<repo>/issues/<number>`)
 
    ```bash
    gh issue comment <number> --repo <owner/repo> --body "VFP published: <notion-url>
 
-   The Value Framing Packet for this issue has been published to Notion. Review it before work starts."
+   [2–4 sentence summary from §4.1 and §4.10]
+
+   Source: https://github.com/<owner>/<repo>/issues/<number>"
    ```
 
    Run this automatically after publishing — do not ask permission. If the input was not a GitHub issue, skip this step silently. If `gh` is unavailable, inform the user:
@@ -286,7 +291,9 @@ When the user confirms they want to publish:
    > ```bash
    > gh issue comment <number> --repo <owner/repo> --body "VFP published: <notion-url>
    >
-   > The Value Framing Packet for this issue has been published to Notion. Review it before work starts."
+   > [2–4 sentence summary from §4.1 and §4.10]
+   >
+   > Source: https://github.com/<owner>/<repo>/issues/<number>"
    > ```"
 
 If the Notion MCP tools are unavailable, say: "Notion MCP is not available right now. Here is the full VFP text — save it locally. The packet is incomplete until published. When Notion is accessible, share the packet here and I will publish it to complete the flow."
