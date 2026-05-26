@@ -23,6 +23,7 @@ const readline      = require('readline');
 const REPO          = 'jgleal/vfp-agent';
 const RAW_BASE      = `https://raw.githubusercontent.com/${REPO}/main`;
 const AGENT_SOURCE  = 'agents/vfp.md';   // single source file in the repo
+const GH_API_BASE   = `https://api.github.com/repos/${REPO}`;
 
 // Marker fences for append-style installs (Windsurf).
 const BLOCK_BEGIN = '<!-- vfp-agent-begin -->';
@@ -183,6 +184,7 @@ function parseArgs(argv) {
     dryRun: false, force: false, all: false,
     listOnly: false, noColor: false, only: [],
     uninstall: false, nonInteractive: false, help: false,
+    update: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -195,6 +197,7 @@ function parseArgs(argv) {
       case '--uninstall':
       case '-u':                opts.uninstall = true; break;
       case '--non-interactive': opts.nonInteractive = true; break;
+      case '--update':          opts.update = true; break;
       case '-h':
       case '--help':            opts.help = true; break;
       case '--': break;
@@ -273,16 +276,76 @@ function detectMatch(spec) {
   return false;
 }
 
+// ── State file ─────────────────────────────────────────────────────────────
+// Persists { sha, tools, installedAt } so --update knows what to re-install.
+
+function stateFilePath() {
+  if (IS_WIN)
+    return path.join(
+      process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+      'vfp-agent', 'state.json'
+    );
+  return path.join(
+    process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'),
+    'vfp-agent', 'state.json'
+  );
+}
+
+function readState() {
+  const file = stateFilePath();
+  if (!fs.existsSync(file)) return null;
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return null; }
+}
+
+function writeState(sha, tools) {
+  const file = stateFilePath();
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ sha, tools, installedAt: new Date().toISOString() }, null, 2) + '\n',
+    'utf8'
+  );
+}
+
+// Fetches the latest commit SHA from the GitHub API (plain SHA response).
+function fetchLatestSha() {
+  const url = `${GH_API_BASE}/commits/main`;
+  const r = child_process.spawnSync(process.execPath, ['-e', `
+    const h = require('https');
+    h.get('${url}', {
+      headers: { 'Accept': 'application/vnd.github.sha', 'User-Agent': 'vfp-agent-installer' }
+    }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        if (res.statusCode !== 200) { process.stderr.write('HTTP ' + res.statusCode + '\\n'); process.exit(1); }
+        process.stdout.write(d.trim());
+      });
+    }).on('error', e => { process.stderr.write(e.message); process.exit(1); });
+  `], { encoding: 'utf8', timeout: 10000 });
+  if (r.status !== 0) throw new Error(`failed to fetch latest SHA: ${r.stderr || ''}`);
+  return r.stdout.trim();
+}
+
+// Returns the current HEAD SHA of a local repo clone, or null on failure.
+function getCurrentSha(repoRoot) {
+  if (!repoRoot) return null;
+  const r = child_process.spawnSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' });
+  if (r.status !== 0) return null;
+  return r.stdout.trim();
+}
+
 // ── Source file resolution ─────────────────────────────────────────────────
 // Reads agents/vfp.md from local clone or fetches from GitHub.
+// Pass forceRemote=true to always fetch from GitHub (used by --update).
 function detectRepoRoot() {
   const root = path.resolve(path.dirname(__filename), '..');
   if (fs.existsSync(path.join(root, 'agents', 'vfp.md'))) return root;
   return null;
 }
 
-function readSourceFile(repoRoot) {
-  if (repoRoot) {
+function readSourceFile(repoRoot, forceRemote) {
+  if (repoRoot && !forceRemote) {
     return fs.readFileSync(path.join(repoRoot, AGENT_SOURCE), 'utf8');
   }
   const url = `${RAW_BASE}/${AGENT_SOURCE}`;
@@ -560,6 +623,7 @@ ${c.bold('DEFAULT')}
 ${c.bold('FLAGS')}
   --all                  Install to all detected tools without prompting
   --only <id>            Install only to the specified tool (repeatable)
+  --update               Re-install to all previously installed tools (fetches latest)
   --list                 List all supported tool IDs and exit
   --dry-run              Show what would happen without making changes
   --force                Overwrite existing files
@@ -576,6 +640,8 @@ ${c.bold('EXAMPLES')}
   node bin/install.js --all
   node bin/install.js --only opencode --dry-run
   node bin/install.js --uninstall
+  node bin/install.js --update
+  curl -fsSL https://raw.githubusercontent.com/jgleal/vfp-agent/main/install.sh | bash -s -- --update
 `);
 }
 
@@ -596,6 +662,59 @@ async function main() {
     process.stdout.write('Supported tools:\n');
     PROVIDERS.forEach(p => process.stdout.write(`  ${p.id.padEnd(12)} ${p.label}\n`));
     process.exit(0);
+  }
+
+  // ── --update flow ──────────────────────────────────────────────────────
+  if (opts.update) {
+    const state = readState();
+    if (!state || !state.tools || state.tools.length === 0) {
+      process.stderr.write('No previous install state found. Run the installer first.\n');
+      process.exit(1);
+    }
+
+    process.stdout.write(`  checking for updates to ${REPO}...\n`);
+    const latestSha = fetchLatestSha();
+    if (state.sha && state.sha === latestSha) {
+      ok(`Already up to date (${latestSha.slice(0, 7)}).`);
+      process.exit(0);
+    }
+
+    if (state.sha) note(`  ${state.sha.slice(0, 7)} → ${latestSha.slice(0, 7)}`);
+    else           note(`  installing latest (${latestSha.slice(0, 7)})`);
+
+    // Always fetch the source from remote so we get the latest version.
+    const source = readSourceFile(repoRoot, true);
+    const active = PROVIDERS.filter(p => state.tools.includes(p.id));
+
+    process.stdout.write(`\nUpdating ${active.length} tool(s)...\n\n`);
+
+    opts.force = true;  // overwrite existing installs
+    opts.nonInteractive = true;
+    const results = { installed: [], skipped: [], failed: [] };
+    const sharedNotionToken = { value: null };
+    const ctx = { say, note, warn, opts, source, results, sharedNotionToken };
+
+    for (const p of active) {
+      try {
+        await installProvider(p, ctx);
+      } catch (e) {
+        fail(`  error: ${e.message}`);
+        results.failed.push(p.id);
+        process.stdout.write('\n');
+      }
+    }
+
+    process.stdout.write('─'.repeat(50) + '\n');
+    if (results.installed.length) ok(`✓ Updated:  ${results.installed.join(', ')}`);
+    if (results.skipped.length)   note(`  Skipped:  ${results.skipped.join(', ')}`);
+    if (results.failed.length)    fail(`✗ Failed:   ${results.failed.join(', ')}`);
+
+    if (!results.failed.length) {
+      writeState(latestSha, state.tools);
+      note(`  state:     ${stateFilePath()}`);
+    }
+
+    process.exit(results.failed.length ? 1 : 0);
   }
 
   // Read source once — all tool writes derive from it.
@@ -648,6 +767,17 @@ async function main() {
   if (results.installed.length) ok(`✓ Installed: ${results.installed.join(', ')}`);
   if (results.skipped.length)   note(`  Skipped:   ${results.skipped.join(', ')} (--force to overwrite)`);
   if (results.failed.length)    fail(`✗ Failed:    ${results.failed.join(', ')}`);
+
+  // Persist state so --update can detect what to re-install later.
+  if (!opts.dryRun && (results.installed.length || results.skipped.length)) {
+    const installedTools = [...new Set([...results.installed, ...results.skipped])];
+    let sha = getCurrentSha(repoRoot);
+    if (!sha) {
+      try { sha = fetchLatestSha(); } catch (_) { sha = ''; }
+    }
+    writeState(sha, installedTools);
+    note(`  state:     ${stateFilePath()}`);
+  }
 
   if (results.failed.length) process.exit(1);
 }

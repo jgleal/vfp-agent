@@ -8,6 +8,9 @@
 #   curl -fsSL https://raw.githubusercontent.com/jgleal/vfp-agent/main/install.sh | bash
 #   curl -fsSL https://raw.githubusercontent.com/jgleal/vfp-agent/main/install.sh | bash -s -- --only opencode
 #
+# Update to latest:
+#   curl -fsSL https://raw.githubusercontent.com/jgleal/vfp-agent/main/install.sh | bash -s -- --update
+#
 # Local clone:
 #   bash install.sh [flags]
 
