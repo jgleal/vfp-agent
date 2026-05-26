@@ -244,3 +244,28 @@ Methodology changes should reflect confirmed patterns in how the framework perfo
 | `validation-evidence-patterns.md` | Reference for evidence types and collection approaches during delivery. Used when deciding what to record in §4.18. |
 | `learnings.md` | The running log of extracted learnings. Maintained as part of the retro process defined here. |
 | `example-library.md` | Grows with worked examples from completed packets. A retrospective that yields a strong example may also add an entry here. |
+
+---
+
+## 8. Scalability of learnings.md
+
+`learnings.md` is a flat markdown file. This is intentional — it is simple, human-readable, and git-versioned with no tooling dependency.
+
+At low-to-moderate usage (one team, a handful of VFPs per week), this will remain practical for years. The high bar for Level 2 entries means the file grows slowly by design.
+
+**If it becomes unwieldy**, the natural split is by `pattern_type`, since every entry already carries that tag:
+
+- `learnings-framing.md`
+- `learnings-slicing.md`
+- `learnings-validation.md`
+- `learnings-assumptions.md`
+- `learnings-process.md`
+- `learnings-evidence.md`
+
+At that point, the retro agent loads only the relevant category file rather than the full log.
+
+A further step — if organisation-scale adoption makes even per-category files large — would be a lightweight index file listing entry titles, status, and dates, with full content in separate files. This preserves fast scanning without loading all content into context.
+
+A vector database or semantic search layer is not warranted unless retrieval needs to be semantic rather than tag-based, and there is tooling infrastructure to support it. Neither condition is expected in the foreseeable operational context.
+
+**Current action: none.** Track file size through normal use; split by category when loading the full file becomes a noticeable friction point.
