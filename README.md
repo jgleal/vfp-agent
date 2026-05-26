@@ -6,6 +6,40 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 
 ---
 
+## Flow
+
+```mermaid
+flowchart TD
+    A([Raw input]) --> B[VFP Agent]
+    B --> C[17-section VFP packet]
+    C --> D{Publish to Notion?}
+    D -- yes --> E[(Notion page)]
+    D -- skip --> F
+    E --> F[Delivery]
+    F --> G[Behaviour Validated]
+    G --> H[Retro · fill §4.18]
+    H --> I([Archived Learning ✓\nmost VFPs end here])
+
+    H -.->|optional| J{Generalizable\nobservation?}
+    J -- no --> K([Done])
+    J -- yes --> L[learning entry\nstatus: watching]
+    L -.->|next packet| M{Same pattern\nconfirmed in 2+ packets?}
+    M -- not yet --> N([Keep watching])
+    M -- confirmed --> O["Agent: Level 3 draft\n(diff · PR description · evidence)"]
+    O --> P[Human reviews\nand adjusts]
+    P --> Q[gh pr create\non jgleal/vfp-agent]
+    Q --> R[gh pr merge]
+    R --> S[--update distributes\nto all installed users]
+    S --> T([Core agent updated ✓])
+```
+
+**Solid arrows** = the normal path every VFP follows.
+**Dashed arrows** = optional extensions, triggered only when observations are worth preserving.
+
+The core agent is updated only when a pattern is confirmed across multiple independent packets — not as a reaction to a single delivery.
+
+---
+
 ## Install
 
 ### From the web (recommended)
@@ -145,13 +179,17 @@ When you confirm you want to publish, the agent:
 
 After a VFP reaches `Behaviour Validated`, invoke the retrospective flow with: *"run a retro on this VFP"*, *"help me fill the validation outcome"*, or *"this has been delivered, let's capture learnings"*.
 
-The agent walks you through filling section 4.18 (Validation Outcome), updates the VFP in Notion, and helps extract learnings for the methodology log.
+The agent walks you through filling section 4.18 (Validation Outcome), updates the VFP in Notion, and optionally extracts learning entries. If an extracted learning confirms a prior `watching` pattern, the agent produces a **Level 3 draft** — a ready-to-apply diff and PR description targeting the relevant methodology doc. The human reviews it, opens a PR, and anyone with the agent installed can run `--update` to receive the merged change.
 
 See [`methodology/retro-procedure.md`](methodology/retro-procedure.md) for the full procedural guide.
 
 ### VFP status lifecycle
 
-`Draft` → `Under Review` → `Needs Rework` → `Accepted for Exploration` → `In Delivery` → `Behaviour Validated` → `Archived Learning`
+```
+Draft → Under Review → Needs Rework → Accepted for Exploration → In Delivery → Behaviour Validated → Archived Learning
+```
+
+`Behaviour Validated` is the retro trigger. `Archived Learning` closes the packet lifecycle. See the [Flow](#flow) diagram above for how the retrospective connects to optional learning extraction and core agent updates.
 
 ---
 
