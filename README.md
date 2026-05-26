@@ -19,25 +19,21 @@ git clone https://github.com/jgleal/vfp-agent
 node vfp-agent/bin/install.js
 ```
 
-Running without flags opens an **interactive selector**. Detected tools are shown first (✓). Pick by number, range, `all`, or press Enter to install to detected tools only.
+Running without flags opens an **interactive TUI selector**. Detected tools are pre-selected and shown first. Use arrow keys to move, `space` to toggle, `a` to select/deselect all, `enter` to confirm, `q` to quit.
 
 ```
 vfp-agent installer
 
 Available tools:
+  > [✓] opencode detected
+    [✓] Claude Code detected
+    [✓] Cursor detected
+    [ ] Gemini CLI (not detected)
+    [ ] OpenAI Codex CLI (not detected)
+    [✓] VS Code (Copilot) detected
+    [ ] Windsurf (not detected)
 
-   1  ✓  opencode
-   2  ✓  Claude Code
-   3  ✓  Cursor
-   4  ·  Gemini CLI        (not detected)
-   5  ·  OpenAI Codex CLI  (not detected)
-   6  ✓  VS Code (Copilot)
-   7  ✓  Windsurf
-
-Enter numbers (e.g. 1,3,5), ranges (1-3), "all",
-or press Enter to install detected tools only.
-
->
+↑/↓ move  space toggle  a all/none  enter confirm  q quit
 ```
 
 ---
@@ -160,10 +156,13 @@ The installer applies `transformContent()` at write time — the prompt body is 
 
 The [`/methodology`](methodology/) directory contains the canonical reference documents this agent is built on:
 
-- [`core-methodology.md`](methodology/core-methodology.md) — AI-Native Delivery & Value Framing core principles
-- [`vfp-guide.md`](methodology/vfp-guide.md) — full 17-section VFP template reference
+- [`core-methodology.md`](methodology/core-methodology.md) — AI-Native Delivery & Value Framing core principles (incl. evidence collection, evaluation, and retro-feedback loop)
+- [`vfp-guide.md`](methodology/vfp-guide.md) — full 17-section VFP template reference + post-delivery Validation Outcome (§4.18)
 - [`capability-slicing.md`](methodology/capability-slicing.md) — behavioural slicing patterns
 - [`risk-uncertainty.md`](methodology/risk-uncertainty.md) — uncertainty classification and risk signal detection
+- [`pilot-operational-model.md`](methodology/pilot-operational-model.md) — pilot operating model: roles, ceremonies, cadence, escalation
+- [`validation-evidence-patterns.md`](methodology/validation-evidence-patterns.md) — evidence collection patterns for behavioural validation
+- [`example-library.md`](methodology/example-library.md) — worked VFP examples (grows through operational learning)
 
 ---
 
