@@ -8,9 +8,9 @@
 //   Local clone: node bin/install.js [flags]
 //   curl|bash:   delegated from install.sh → npx -y github:jgleal/vfp-agent -- [flags]
 //
-// DEFAULT BEHAVIOUR (no flags):
-//   Interactive selector. Detected tools are shown first with a ✓ marker.
-//   User picks by number, range, "all", or Enter (installs detected only).
+// Single source of truth: agents/vfp.md (opencode frontmatter format).
+// The installer parses the frontmatter, rewrites it per target tool, and
+// writes the result — the body is never duplicated.
 
 'use strict';
 
@@ -20,20 +20,15 @@ const path          = require('path');
 const child_process = require('child_process');
 const readline      = require('readline');
 
-const REPO     = 'jgleal/vfp-agent';
-const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/main`;
+const REPO          = 'jgleal/vfp-agent';
+const RAW_BASE      = `https://raw.githubusercontent.com/${REPO}/main`;
+const AGENT_SOURCE  = 'agents/vfp.md';   // single source file in the repo
 
 // Marker fences for append-style installs (Windsurf).
 const BLOCK_BEGIN = '<!-- vfp-agent-begin -->';
 const BLOCK_END   = '<!-- vfp-agent-end -->';
 
 // ── Provider matrix ────────────────────────────────────────────────────────
-// Detection rules:
-//   command:<bin>   — binary on PATH
-//   macapp:<Name>   — macOS .app bundle in /Applications or ~/Applications
-//   dir:<path>      — directory exists (soft signal; used only when no CLI)
-//
-// Tools where supportsAgents is false get rules/memories install instead.
 const PROVIDERS = [
   { id: 'opencode', label: 'opencode',          detect: 'command:opencode',                         supportsAgents: true  },
   { id: 'claude',   label: 'Claude Code',       detect: 'command:claude',                           supportsAgents: true  },
@@ -73,15 +68,56 @@ const AGENT_DEST = {
   windsurf: () => path.join(os.homedir(), '.codeium', 'windsurf', 'memories', 'global_rules.md'),
 };
 
-const IMPL_FILE = {
-  opencode: 'implementations/opencode/vfp.md',
-  claude:   'implementations/claude-code/vfp.md',
-  cursor:   'implementations/cursor/vfp.md',
-  gemini:   'implementations/gemini/vfp.md',
-  codex:    'implementations/codex/vfp.md',
-  vscode:   'implementations/vscode/vfp.agent.md',
-  windsurf: 'implementations/windsurf/vfp.md',
-};
+// ── Frontmatter transform ──────────────────────────────────────────────────
+// Source format is opencode. The body is never touched — only the frontmatter
+// header is rewritten to match the target tool's expectations.
+
+function parseFm(content) {
+  const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (!m) return { fields: {}, body: content };
+  const fields = {};
+  for (const line of m[1].split('\n')) {
+    const colon = line.indexOf(':');
+    if (colon === -1) continue;
+    const k = line.slice(0, colon).trim();
+    const v = line.slice(colon + 1).trim();
+    if (k) fields[k] = v;
+  }
+  return { fields, body: m[2].trimStart() };
+}
+
+function transformContent(source, toolId) {
+  const { fields, body } = parseFm(source);
+  const desc = fields.description || '';
+
+  switch (toolId) {
+    case 'opencode':
+      // Source format — pass through unchanged.
+      return source;
+
+    case 'claude':
+      // Claude Code: name + description only.
+      return `---\nname: vfp\ndescription: ${desc}\n---\n\n${body}`;
+
+    case 'cursor':
+    case 'gemini':
+    case 'codex':
+      // Description-only frontmatter.
+      return `---\ndescription: ${desc}\n---\n\n${body}`;
+
+    case 'vscode':
+      // VS Code Copilot .agent.md: description + user-invocable.
+      return `---\ndescription: ${desc}\nuser-invocable: true\n---\n\n${body}`;
+
+    case 'windsurf':
+      // Windsurf has no agents dir — content is appended to global_rules.md.
+      // Strip frontmatter entirely; add a plain heading.
+      return `# VFP Agent — Value Framing Packet Generator\n\n${body}`;
+
+    default:
+      return source;
+  }
+}
 
 // ── Notion MCP config per provider ────────────────────────────────────────
 const NOTION_MCP_CONFIGS = {
@@ -139,7 +175,6 @@ const NOTION_MCP_CONFIGS = {
       env: { NOTION_TOKEN: token },
     }),
   },
-  // Gemini / Codex: MCP config format not yet standardised; skip for now.
 };
 
 // ── Argv ───────────────────────────────────────────────────────────────────
@@ -189,14 +224,7 @@ function die(msg) { process.stderr.write(msg + '\n'); process.exit(2); }
 function makeChalk(noColor) {
   const useColor = !noColor && process.stdout.isTTY && !process.env.NO_COLOR;
   const wrap = (codes) => (s) => useColor ? `\x1b[${codes}m${s}\x1b[0m` : s;
-  return {
-    green:  wrap('32'),
-    yellow: wrap('33'),
-    dim:    wrap('2'),
-    red:    wrap('31'),
-    bold:   wrap('1'),
-    cyan:   wrap('36'),
-  };
+  return { green: wrap('32'), yellow: wrap('33'), dim: wrap('2'), red: wrap('31'), bold: wrap('1') };
 }
 
 // ── Detection helpers ──────────────────────────────────────────────────────
@@ -245,23 +273,19 @@ function detectMatch(spec) {
   return false;
 }
 
-// ── Repo root resolution ───────────────────────────────────────────────────
+// ── Source file resolution ─────────────────────────────────────────────────
+// Reads agents/vfp.md from local clone or fetches from GitHub.
 function detectRepoRoot() {
   const root = path.resolve(path.dirname(__filename), '..');
-  if (fs.existsSync(path.join(root, 'implementations')) &&
-      fs.existsSync(path.join(root, 'bin', 'install.js')))
-    return root;
+  if (fs.existsSync(path.join(root, 'agents', 'vfp.md'))) return root;
   return null;
 }
 
-// ── Implementation file resolution ────────────────────────────────────────
-function readImplFile(repoRoot, relPath) {
+function readSourceFile(repoRoot) {
   if (repoRoot) {
-    const full = path.join(repoRoot, relPath);
-    if (fs.existsSync(full)) return fs.readFileSync(full, 'utf8');
-    throw new Error(`implementation file not found: ${full}`);
+    return fs.readFileSync(path.join(repoRoot, AGENT_SOURCE), 'utf8');
   }
-  const url = `${RAW_BASE}/${relPath}`;
+  const url = `${RAW_BASE}/${AGENT_SOURCE}`;
   process.stdout.write(`  fetching ${url}\n`);
   const r = child_process.spawnSync(process.execPath, ['-e', `
     const h = require('https');
@@ -295,8 +319,7 @@ function appendBlock(dest, content, opts, dry) {
     const existing = fs.readFileSync(dest, 'utf8');
     if (existing.includes(BLOCK_BEGIN)) {
       if (!opts.force) return 'skip';
-      const stripped = stripBlock(existing);
-      fs.writeFileSync(dest, stripped.trimEnd() + '\n\n' + fenced, 'utf8');
+      fs.writeFileSync(dest, stripBlock(existing).trimEnd() + '\n\n' + fenced, 'utf8');
       return 'ok';
     }
     const sep = existing.endsWith('\n') ? '\n' : '\n\n';
@@ -317,7 +340,7 @@ function stripBlock(content) {
 function removeFile(dest, dry) {
   if (dry) { process.stdout.write(`  would remove: ${dest}\n`); return; }
   if (fs.existsSync(dest)) { fs.unlinkSync(dest); process.stdout.write(`  removed: ${dest}\n`); }
-  else process.stdout.write(`  not found (already removed?): ${dest}\n`);
+  else process.stdout.write(`  not found: ${dest}\n`);
 }
 
 function removeBlock(dest, dry) {
@@ -332,8 +355,7 @@ function removeBlock(dest, dry) {
 // ── JSON config helpers ────────────────────────────────────────────────────
 function readJson(file) {
   if (!fs.existsSync(file)) return {};
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-  catch (_) { return {}; }
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return {}; }
 }
 
 function writeJson(file, data) {
@@ -344,31 +366,26 @@ function writeJson(file, data) {
 // ── Notion MCP check + setup ───────────────────────────────────────────────
 function notionMcpConfigured(providerId) {
   const cfg = NOTION_MCP_CONFIGS[providerId];
-  if (!cfg) return true; // unknown format — skip check
-  const configFile = cfg.configFile();
-  if (!fs.existsSync(configFile)) return false;
-  const data = readJson(configFile);
-  const servers = data[cfg.mcpKey];
-  return servers && servers[cfg.serverKey] !== undefined;
+  if (!cfg) return true;
+  const file = cfg.configFile();
+  if (!fs.existsSync(file)) return false;
+  const data = readJson(file);
+  return !!(data[cfg.mcpKey] && data[cfg.mcpKey][cfg.serverKey]);
 }
 
 function installNotionMcp(providerId, token, dry) {
   const cfg = NOTION_MCP_CONFIGS[providerId];
-  if (!cfg) return false;
-  const configFile = cfg.configFile();
-  if (dry) {
-    process.stdout.write(`  would add Notion MCP to: ${configFile}\n`);
-    return true;
-  }
-  const data = readJson(configFile);
+  if (!cfg) return;
+  const file = cfg.configFile();
+  if (dry) { process.stdout.write(`  would add Notion MCP to: ${file}\n`); return; }
+  const data = readJson(file);
   if (!data[cfg.mcpKey]) data[cfg.mcpKey] = {};
   data[cfg.mcpKey][cfg.serverKey] = cfg.buildEntry(token);
-  writeJson(configFile, data);
-  process.stdout.write(`  Notion MCP configured in: ${configFile}\n`);
-  return true;
+  writeJson(file, data);
+  process.stdout.write(`  Notion MCP configured in: ${file}\n`);
 }
 
-// ── Interactive prompt helpers ─────────────────────────────────────────────
+// ── Interactive prompt ─────────────────────────────────────────────────────
 async function prompt(question) {
   if (!process.stdin.isTTY) return null;
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -378,54 +395,41 @@ async function prompt(question) {
 }
 
 // ── Interactive tool selector ──────────────────────────────────────────────
-// Shown when the user runs the installer without --all or --only.
-// Detected tools are listed first (marked ✓), then undetected ones (marked ·).
-// Input format: comma-separated numbers/ranges, "all", or Enter (= detected only).
 async function interactiveSelect(detected, all, c) {
   process.stdout.write('\n');
   process.stdout.write(c.bold('vfp-agent installer\n\n'));
 
-  const detectedSet = new Set(detected.map(p => p.id));
+  const detectedSet    = new Set(detected.map(p => p.id));
   const detectedList   = all.filter(p =>  detectedSet.has(p.id));
   const undetectedList = all.filter(p => !detectedSet.has(p.id));
-  const ordered = [...detectedList, ...undetectedList];
+  const ordered        = [...detectedList, ...undetectedList];
 
   process.stdout.write('Available tools:\n\n');
   ordered.forEach((p, i) => {
     const num    = String(i + 1).padStart(2);
-    const marker = detectedSet.has(p.id)
-      ? c.green('✓')
-      : c.dim('·');
-    const label  = detectedSet.has(p.id)
-      ? c.bold(p.label)
-      : c.dim(p.label);
+    const marker = detectedSet.has(p.id) ? c.green('✓') : c.dim('·');
+    const label  = detectedSet.has(p.id) ? c.bold(p.label) : c.dim(p.label);
     const note   = detectedSet.has(p.id) ? '' : c.dim(' (not detected)');
     process.stdout.write(`  ${num}  ${marker}  ${label}${note}\n`);
   });
 
   process.stdout.write('\n');
-  process.stdout.write(c.dim('Enter numbers (e.g. 1,3,5), ranges (1-3), "all",\n'));
-  process.stdout.write(c.dim('or press Enter to install detected tools only.\n\n'));
+  process.stdout.write(c.dim('Enter numbers (e.g. 1,3), ranges (1-3), "all",\n'));
+  process.stdout.write(c.dim('or press Enter to install to detected tools only.\n\n'));
 
   const answer = await prompt('> ');
-
-  // Enter with no input → detected only
   if (answer === null || answer === '') return detectedList;
 
   const lower = answer.toLowerCase().trim();
   if (lower === 'all') return ordered;
 
-  // Parse "1,2,3" and "1-3" into indices (1-based)
   const selected = new Set();
   for (const token of lower.split(',')) {
     const t = token.trim();
     const range = t.match(/^(\d+)-(\d+)$/);
     if (range) {
-      const lo = parseInt(range[1], 10);
-      const hi = parseInt(range[2], 10);
-      for (let n = lo; n <= hi; n++) {
+      for (let n = parseInt(range[1], 10); n <= parseInt(range[2], 10); n++)
         if (n >= 1 && n <= ordered.length) selected.add(n - 1);
-      }
     } else {
       const n = parseInt(t, 10);
       if (!isNaN(n) && n >= 1 && n <= ordered.length) selected.add(n - 1);
@@ -436,55 +440,45 @@ async function interactiveSelect(detected, all, c) {
     process.stdout.write(c.yellow('Nothing selected — installing detected tools only.\n'));
     return detectedList;
   }
-
   return ordered.filter((_, i) => selected.has(i));
 }
 
 // ── Per-provider install ───────────────────────────────────────────────────
 async function installProvider(prov, ctx) {
-  const { say, note, warn, opts, repoRoot, results, sharedNotionToken } = ctx;
+  const { say, note, warn, opts, source, results, sharedNotionToken } = ctx;
   const { id, label, supportsAgents } = prov;
 
-  results.detected++;
   say(`→ ${label}`);
 
-  // 1. Install agent / rules file
+  const content = transformContent(source, id);
   const dest    = AGENT_DEST[id]();
-  const content = readImplFile(repoRoot, IMPL_FILE[id]);
 
-  let fileResult;
-  if (supportsAgents) {
-    fileResult = writeFile(dest, content, opts, opts.dryRun);
-  } else {
-    fileResult = appendBlock(dest, content, opts, opts.dryRun);
-  }
+  const fileResult = supportsAgents
+    ? writeFile(dest, content, opts, opts.dryRun)
+    : appendBlock(dest, content, opts, opts.dryRun);
 
   if (fileResult === 'ok') {
     if (!opts.dryRun) process.stdout.write(`  installed: ${dest}\n`);
     results.installed.push(id);
   } else {
-    note(`  already installed (${dest}) — use --force to overwrite`);
-    results.skipped.push([id, 'file exists']);
+    note(`  already installed — use --force to overwrite`);
+    results.skipped.push(id);
   }
 
-  // 2. Check Notion MCP prerequisite
-  const hasMcpConfig = NOTION_MCP_CONFIGS[id] !== undefined;
-  if (hasMcpConfig && fileResult !== 'skip') {
+  // Notion MCP prerequisite
+  if (NOTION_MCP_CONFIGS[id] && fileResult !== 'skip') {
     if (notionMcpConfigured(id)) {
-      note(`  Notion MCP already configured`);
+      note('  Notion MCP already configured');
     } else {
-      warn(`  Notion MCP not found — required for VFP publishing`);
+      warn('  Notion MCP not found — required for VFP publishing');
       if (!opts.dryRun && !opts.nonInteractive) {
         let token = sharedNotionToken.value;
         if (!token) {
           token = await prompt('  Notion integration token (ntn_...): ');
           if (token) sharedNotionToken.value = token;
         }
-        if (token) {
-          installNotionMcp(id, token, false);
-        } else {
-          note('  Skipped — configure Notion MCP manually later.');
-        }
+        if (token) installNotionMcp(id, token, false);
+        else note('  Skipped — configure Notion MCP manually later.');
       } else if (opts.dryRun) {
         installNotionMcp(id, '<token>', true);
       } else {
@@ -499,11 +493,7 @@ async function installProvider(prov, ctx) {
 async function uninstallProvider(prov, say, dry) {
   const { id, label, supportsAgents } = prov;
   say(`→ ${label}`);
-  if (supportsAgents) {
-    removeFile(AGENT_DEST[id](), dry);
-  } else {
-    removeBlock(AGENT_DEST[id](), dry);
-  }
+  supportsAgents ? removeFile(AGENT_DEST[id](), dry) : removeBlock(AGENT_DEST[id](), dry);
 }
 
 // ── Help ───────────────────────────────────────────────────────────────────
@@ -515,34 +505,27 @@ ${c.bold('USAGE')}
   curl -fsSL https://raw.githubusercontent.com/jgleal/vfp-agent/main/install.sh | bash
 
 ${c.bold('DEFAULT')}
-  Running without flags launches an interactive selector. Detected tools are
-  shown first (✓). Select by number, range, "all", or Enter for detected only.
+  No flags → interactive selector. Detected tools shown first (✓).
+  Select by number, range, "all", or Enter for detected only.
 
 ${c.bold('FLAGS')}
   --all                  Install to all detected tools without prompting
   --only <id>            Install only to the specified tool (repeatable)
-  --list                 List all supported tools and exit
+  --list                 List all supported tool IDs and exit
   --dry-run              Show what would happen without making changes
-  --force                Overwrite existing files and blocks
-  --uninstall, -u        Remove installed files instead of installing
-  --non-interactive      Skip all prompts (no Notion MCP setup)
+  --force                Overwrite existing files
+  --uninstall, -u        Remove installed files
+  --non-interactive      Skip all prompts (CI/automation)
   --no-color             Disable ANSI colors
   --help, -h             Show this help
 
 ${c.bold('SUPPORTED TOOLS')}
 ${PROVIDERS.map(p => `  ${p.id.padEnd(12)} ${p.label}`).join('\n')}
 
-${c.bold('NOTION MCP')}
-  During install the script checks whether Notion MCP is configured for each
-  selected tool. If missing it prompts once for your Notion integration token
-  and patches the relevant config file automatically.
-  Get a token at: https://www.notion.so/my-integrations
-
 ${c.bold('EXAMPLES')}
-  node bin/install.js                 # interactive selector (recommended)
-  node bin/install.js --all           # install to all detected tools
-  node bin/install.js --only opencode
-  node bin/install.js --dry-run --all
+  node bin/install.js
+  node bin/install.js --all
+  node bin/install.js --only opencode --dry-run
   node bin/install.js --uninstall
 `);
 }
@@ -557,7 +540,7 @@ async function main() {
   const ok       = (s) => process.stdout.write(c.green(s) + '\n');
   const fail     = (s) => process.stdout.write(c.red(s) + '\n');
   const repoRoot = detectRepoRoot();
-  const results  = { detected: 0, installed: [], skipped: [], failed: [] };
+  const results  = { installed: [], skipped: [], failed: [] };
 
   if (opts.help)     { printHelp(c); process.exit(0); }
   if (opts.listOnly) {
@@ -566,24 +549,23 @@ async function main() {
     process.exit(0);
   }
 
-  // Build the full detected list (used by interactive mode and --all)
+  // Read source once — all tool writes derive from it.
+  const source = readSourceFile(repoRoot);
+
   const allDetected = PROVIDERS.filter(p => detectMatch(p.detect));
 
-  // Determine active providers
   let active;
   if (opts.only.length) {
     active = PROVIDERS.filter(p => opts.only.includes(p.id));
   } else if (opts.all) {
     active = allDetected.length > 0 ? allDetected : PROVIDERS;
   } else if (opts.nonInteractive || !process.stdin.isTTY) {
-    // Non-interactive without --all: install detected only
     active = allDetected;
     if (active.length === 0) {
-      warn('No supported tools detected. Use --only <id> or --all to target tools explicitly.');
+      warn('No supported tools detected. Use --only <id> or --all.');
       process.exit(0);
     }
   } else {
-    // Default: interactive selector
     active = await interactiveSelect(allDetected, PROVIDERS, c);
     if (!active || active.length === 0) {
       process.stdout.write('Nothing selected. Exiting.\n');
@@ -601,22 +583,22 @@ async function main() {
   process.stdout.write(`\nInstalling to ${active.length} tool(s)...\n\n`);
 
   const sharedNotionToken = { value: null };
-  const ctx = { say, note, warn, ok, fail, opts, repoRoot, results, sharedNotionToken };
+  const ctx = { say, note, warn, opts, source, results, sharedNotionToken };
 
   for (const p of active) {
     try {
       await installProvider(p, ctx);
     } catch (e) {
-      fail(`  error installing to ${p.label}: ${e.message}`);
-      results.failed.push([p.id, e.message]);
+      fail(`  error: ${e.message}`);
+      results.failed.push(p.id);
       process.stdout.write('\n');
     }
   }
 
   process.stdout.write('─'.repeat(50) + '\n');
   if (results.installed.length) ok(`✓ Installed: ${results.installed.join(', ')}`);
-  if (results.skipped.length)   note(`  Skipped:   ${results.skipped.map(([id]) => id).join(', ')} (--force to overwrite)`);
-  if (results.failed.length)    fail(`✗ Failed:    ${results.failed.map(([id, r]) => `${id} (${r})`).join(', ')}`);
+  if (results.skipped.length)   note(`  Skipped:   ${results.skipped.join(', ')} (--force to overwrite)`);
+  if (results.failed.length)    fail(`✗ Failed:    ${results.failed.join(', ')}`);
 
   if (results.failed.length) process.exit(1);
 }

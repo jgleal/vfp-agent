@@ -125,7 +125,7 @@ When you confirm you want to publish, the agent:
 The VFP agent can be configured as a **Custom GPT** on ChatGPT. This is a manual web process, not covered by the CLI installer.
 
 1. Go to [chat.openai.com](https://chat.openai.com) → **Explore GPTs** → **Create**
-2. In **Instructions**, paste the contents of [`implementations/vfp-body.md`](implementations/opencode/vfp.md) (everything after the frontmatter)
+2. In **Instructions**, paste the contents of [`agents/vfp.md`](agents/vfp.md) (everything after the `---` frontmatter block)
 3. Set a name and description
 4. To enable Notion publishing, add a **Custom Action**:
    - Import the Notion OpenAPI spec from `https://developers.notion.com/page/openapi`
@@ -136,6 +136,25 @@ The VFP agent can be configured as a **Custom GPT** on ChatGPT. This is a manual
 Note: Notion pages must be explicitly shared with your integration for the agent to access them.
 
 ---
+
+## Repo structure
+
+```
+agents/vfp.md          ← single source of truth (opencode frontmatter format)
+bin/install.js         ← installer: reads agents/vfp.md, transforms frontmatter per tool
+install.sh             ← curl-pipeable bash shim → delegates to bin/install.js via npx
+methodology/           ← canonical reference documents
+```
+
+The installer applies `transformContent()` at write time — the prompt body is never duplicated. Only the frontmatter header differs per tool:
+
+| Tool | Frontmatter written |
+|------|---------------------|
+| opencode | source format (`mode: all`) |
+| Claude Code | `name` + `description` only |
+| Cursor / Gemini / Codex | `description` only |
+| VS Code | `description` + `user-invocable: true` |
+| Windsurf | no frontmatter — appended as plain block to `global_rules.md` |
 
 ## Methodology docs
 
