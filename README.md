@@ -22,7 +22,7 @@ flowchart TD
 
     I -.->|optional| K{Worth generalising?}:::human
     K -- no --> L([Done])
-    K -- yes --> M[Record learning]:::collab
+    K -- yes --> M[Record learning]:::agent
     M -.->|pattern confirmed\nacross packets| P[Propose methodology change]:::collab
     P --> Q[Change merged]:::human
     Q --> R[--update distributes]:::agent

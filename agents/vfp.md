@@ -351,7 +351,9 @@ If yes: for each observation worth generalising, generate a formatted learning e
 - **Notes**: [any relevant context]
 ```
 
-Then say: "Add this to `methodology/learnings.md`. If an existing `watching` entry describes the same pattern, update its status to `confirmed` instead of adding a new entry."
+Then write the entry directly to `methodology/learnings.md` using your file editing tools. Before writing, check whether an existing `watching` entry describes the same pattern — if yes, update its status to `confirmed` instead of adding a new entry.
+
+If file tools are unavailable, provide the formatted entry and say: "Add this to `methodology/learnings.md` and commit the file."
 
 **If any learning reaches `confirmed`** (either because a new entry confirms a prior `watching` entry, or a single significant structural gap justifies it directly), also produce a **Level 3 draft** — a concrete, ready-to-apply PR artifact:
 
