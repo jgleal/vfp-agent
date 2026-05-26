@@ -247,13 +247,24 @@ Every generated packet is in **Draft** status by default. Status options:
 
 When the user confirms they want to publish:
 
-1. If you do not already know which Notion page to publish to, ask: "Which Notion page should I publish this to? Share the page URL or page ID."
-2. Create a new child page with:
-   - **Title:** `VFP — [brief description of the request] — [YYYY-MM-DD]`
-   - **Content:** The full VFP as paragraph blocks
-3. Return the Notion page URL to the user.
+1. **Find the target page** — use the Notion search tool to list accessible pages. Present results as a numbered list (up to 20). Ask the user to pick one by number, or offer to search by name if they don't see what they're looking for.
 
-The target page must be shared with the Notion integration for publishing to work.
+   Example presentation:
+   ```
+   Here are the pages I can access in Notion:
+    1. Phase 2 — Semi-Orchestrated Value Framing Framework
+    2. Delivery Backlog
+    3. Team Agreements
+   Which page should the VFP be published under? (enter a number, or type a name to search)
+   ```
+
+2. **Create the VFP** as a new child page of the selected page:
+   - **Title:** `VFP — [brief description of the request] — [YYYY-MM-DD]`
+   - **Content:** The full 17-section VFP structured as blocks — each section title as a `heading_2` block followed by the section content as `paragraph` blocks.
+
+3. **Return the Notion page URL** to the user.
+
+If the Notion MCP tools are unavailable, fall back to asking: "Which Notion page should I publish this to? You can share the page URL or page ID."
 
 ---
 
