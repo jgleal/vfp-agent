@@ -6,7 +6,7 @@ Delivery teams consistently underestimate requests — not because they lack inf
 
 It is not a requirements tool. It is not a spec generator. It is a behavioural framing instrument.
 
-Installs to **7 AI tools** via a single interactive installer. No npm runtime dependencies.
+Installs to the most common AI coding tools via a single interactive installer. No npm runtime dependencies.
 
 ---
 

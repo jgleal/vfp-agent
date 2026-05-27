@@ -6,7 +6,7 @@ This file provides the context an AI agent needs to work effectively on `vfp-age
 
 ## What this project is
 
-`vfp-agent` is an installable AI agent that generates Value Framing Packets (VFPs), publishes them to Notion, and breaks them down into developer-ready GitHub sub-issues. It installs to 7 AI tools via a single interactive Node.js installer. No npm runtime dependencies. Requires Node.js ≥ 24.
+`vfp-agent` is an installable AI agent that generates Value Framing Packets (VFPs), publishes them to Notion, and breaks them down into developer-ready GitHub sub-issues. It installs to the most common AI coding tools via a single interactive Node.js installer. No npm runtime dependencies. Requires Node.js ≥ 24.
 
 GitHub: `https://github.com/jgleal/vfp-agent`
 
