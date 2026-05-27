@@ -1,6 +1,12 @@
 # Example Library
 ## Behavioural Reasoning, Operational Learning & Continuity-of-Intent Evolution
 
+> **No examples yet.** This library is currently empty. It needs real VFP examples to be useful — structural guidance alone does not substitute for concrete reference material.
+>
+> **For humans:** to populate this library, add real VFPs that have been reviewed and are worth preserving as reference. The mechanism for doing so is not yet defined — this is intentional and will be addressed in a future phase.
+>
+> **For agents:** if this library contains no examples, do not treat the structural guidance below as a substitute. Apply the methodology from first principles using `vfp-guide.md`, `core-methodology.md`, and the other skill files. Acknowledge the absence of examples if asked.
+
 ---
 
 ## 1. Purpose
@@ -263,4 +269,4 @@ The purpose IS evolving behavioural delivery understanding through operational l
 
 ## Examples
 
-*(This section grows over time through operational learning. Each entry should follow the structure in section 5.)*
+*(Empty. Add real VFPs here to give the agent concrete reference material. Until this section has entries, the agent operates from methodology principles alone.)*

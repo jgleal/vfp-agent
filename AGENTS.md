@@ -114,9 +114,9 @@ methodology/               # Canonical methodology documentation (9 files)
   risk-uncertainty.md      # Risk classification and uncertainty handling
   pilot-operational-model.md
   validation-evidence-patterns.md
-  example-library.md       # Examples intentionally sparse — populated via learning loop
-  retro-procedure.md       # 3-level retro output model, PR flow as canonical Level 3 path
-  learnings.md             # Running log of observed patterns (watching → confirmed → methodology-proposed → methodology-updated)
+  example-library.md       # Currently empty — needs real VFP examples to be useful; mechanism for adding them not yet defined
+  retro-procedure.md       # Phase 3+ spec — 3-level retro output model, PR flow as canonical Level 3 path
+  learnings.md             # Phase 3+ spec — running log of observed patterns (watching → confirmed → methodology-proposed → methodology-updated)
 README.md                  # User-facing docs with Mermaid flow diagram
 AGENTS.md                  # This file
 ```

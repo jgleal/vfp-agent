@@ -234,7 +234,7 @@ The [`/methodology`](methodology/) directory contains the canonical reference do
 - [`risk-uncertainty.md`](methodology/risk-uncertainty.md) — uncertainty classification and risk signal detection
 - [`pilot-operational-model.md`](methodology/pilot-operational-model.md) — pilot operating model: roles, ceremonies, cadence, escalation
 - [`validation-evidence-patterns.md`](methodology/validation-evidence-patterns.md) — evidence collection patterns for behavioural validation
-- [`example-library.md`](methodology/example-library.md) — worked VFP examples (grows through operational learning)
+- [`example-library.md`](methodology/example-library.md) — reference library of worked VFP examples; **currently empty** — needs real examples to give the agent concrete reference material. The mechanism for adding examples is not yet defined.
 - [`retro-procedure.md`](methodology/retro-procedure.md) — **Phase 3+ spec** — step-by-step retrospective procedure: when to raise, what to update, how learnings feed back into the methodology
 - [`learnings.md`](methodology/learnings.md) — **Phase 3+ spec** — running log of confirmed patterns extracted from VFP validation outcomes; populated through the retrospective flow
 
