@@ -6,7 +6,7 @@ This file provides the context an AI agent needs to work effectively on `vfp-age
 
 ## What this project is
 
-`vfp-agent` is an installable AI agent that generates Value Framing Packets (VFPs) and guides retrospectives. It installs to 7 AI tools via a single interactive Node.js installer. No npm runtime dependencies. Requires Node.js ≥ 24.
+`vfp-agent` is an installable AI agent that generates Value Framing Packets (VFPs), publishes them to Notion, and breaks them down into developer-ready GitHub sub-issues. It installs to 7 AI tools via a single interactive Node.js installer. No npm runtime dependencies. Requires Node.js ≥ 24.
 
 GitHub: `https://github.com/jgleal/vfp-agent`
 
@@ -42,9 +42,35 @@ This distinction matters when working on the agent. Changes that push it toward 
 
 Each section has a specific purpose. The most important is **§4.10 Proposed Agreement Boundary** — it defines what people currently believe they are agreeing to. It is a continuity-of-intent reference, not a full specification.
 
-§4.18 (Validation Outcome) is filled during the retrospective, not at generation time.
+**§4.11 Suggested Capability Slices** is critical in the current phase — each slice becomes a developer-ready GitHub sub-issue. Slices must be independently workable, carry a clear done state, and include enough scope context to prevent clarification loops before work begins.
 
-### The retrospective and why it closes the loop
+§4.18 (Validation Outcome) is filled during the retrospective (Phase 3+), not at generation time. It is published as a placeholder heading in Notion at generation time.
+
+### The active flow (current phase)
+
+```
+Input (GitHub issue or other)
+  ↓
+Generate VFP — agent interprets behavioural intent, generates all 17 sections
+  ↓
+Publish to Notion — required step, packet is incomplete until published
+  ↓
+Comment on source GitHub issue — automatic if input came from a GH issue
+  ↓
+Human reviews and corrects VFP in Notion
+  ↓
+Human signals VFP is ready (shares GH issue or Notion URL)
+  ↓
+Agent fetches corrected VFP from Notion
+  ↓
+Generate GitHub sub-issues — one per §4.11 slice, self-contained, linked to parent
+  ↓
+Developers work from sub-issues
+```
+
+### The retrospective and why it closes the loop *(Phase 3+ — deferred)*
+
+> **Deferred.** The retro flow is not active in the current phase. The design below is preserved as the spec for Phase 3+. Do not implement or invoke the retro flow until explicitly reactivated.
 
 The retro is not a performance review. It is the moment where a delivered packet is examined for what the framing got right, what it missed, and what the team now understands that they did not before. This learning is the fuel for improving the methodology.
 
@@ -58,7 +84,7 @@ The retro produces three levels of output:
 
 Level 3 is intentionally gated. Single-event observations never change the methodology. The agent proposes the change and produces the PR artifact — the human reviews, adjusts if needed, and merges. This preserves the reasoning alongside the diff.
 
-### The learning loop
+### The learning loop *(Phase 3+ — deferred)*
 
 ```
 Retro → learnings.md (watching) → second packet confirms → learnings.md (confirmed)
@@ -66,7 +92,7 @@ Retro → learnings.md (watching) → second packet confirms → learnings.md (c
 → learnings.md (methodology-updated) → --update distributes to all users
 ```
 
-This loop is the mechanism by which real-world delivery experience improves the methodology. It must remain intact. Do not short-circuit it by updating methodology docs directly from a single observation.
+This loop is the mechanism by which real-world delivery experience improves the methodology. It must remain intact when reactivated. Do not short-circuit it by updating methodology docs directly from a single observation.
 
 ### Why Notion publish is required
 
@@ -157,7 +183,7 @@ MCP config (Notion) is injected into each tool's config file:
 Draft → Under Review → Needs Rework → Accepted for Exploration → In Delivery → Behaviour Validated → Archived Learning
 ```
 
-- `Behaviour Validated` is the retro trigger
+- `Behaviour Validated` → `Archived Learning` via retrospective is **deferred to Phase 3+**
 - `Archived Learning` closes the packet lifecycle
 - `methodology-proposed` is a learning status between `confirmed` and `methodology-updated` — set when a PR is opened, prevents duplicate proposals while the PR is in flight
 
@@ -179,9 +205,12 @@ Draft → Under Review → Needs Rework → Accepted for Exploration → In Deli
 These are not installer dependencies — the installer uses Node.js stdlib only. These are dependencies of the agent's workflow at runtime.
 
 **GitHub CLI (`gh`)**
-Required to fetch issues from private repositories as VFP input. For public repositories, webfetch is a viable fallback but subject to unauthenticated API rate limits (60 req/hour) and does not provide access to comments, labels, or linked PRs. Use `gh` by default; fall back to webfetch only when `gh` is unavailable and the repo is confirmed public.
+Required to fetch issues as VFP input and to create and link sub-issues. For public repositories, webfetch is a viable fallback for fetching input, but `gh` is required for sub-issue creation in all cases.
 
 ```bash
-gh issue view <number> --repo <owner/repo>   # fetch issue as VFP input
-gh issue list --repo <owner/repo>            # browse open issues
+gh issue view <number> --repo <owner/repo>              # fetch issue as VFP input
+gh issue view <number> --repo <owner/repo> --comments   # extract Notion URL from VFP comment
+gh issue create --repo <owner/repo> --title "..." --body "..."   # create sub-issue
+gh api repos/<owner>/<repo>/issues/<parent>/sub_issues \
+  --method POST -f sub_issue_id=<child>                 # link sub-issue to parent
 ```

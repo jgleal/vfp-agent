@@ -2,7 +2,7 @@
 
 Delivery teams consistently underestimate requests — not because they lack information, but because they frame them in implementation terms before understanding the behaviour they are trying to change. A ticket that says "add booking system" conceals who does what, what changes in their world, what uncertainty exists, and what the smallest meaningful thing to validate would be.
 
-`vfp-agent` intervenes at the framing stage. It generates **Value Framing Packets (VFPs)** — structured artefacts that expose behavioural intent, surface assumptions, bound uncertainty, and define the smallest meaningful validation slice before work starts. After delivery, it guides retrospectives that close the packet lifecycle and feed learning back into the methodology.
+`vfp-agent` intervenes at the framing stage. It generates **Value Framing Packets (VFPs)** — structured artefacts that expose behavioural intent, surface assumptions, bound uncertainty, and define independently workable capability slices. Once the VFP has been reviewed and corrected in Notion, the agent turns those slices into **self-contained GitHub sub-issues** ready for developers to pick up.
 
 It is not a requirements tool. It is not a spec generator. It is a behavioural framing instrument.
 
@@ -13,7 +13,7 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 ## Prerequisites
 
 - **Node.js ≥ 24** — required by the installer
-- **GitHub CLI (`gh`)** — required to fetch issues from private repositories as VFP input. For public repositories, the agent can fall back to webfetch, but `gh` is recommended in all cases (avoids rate limits, handles comments and labels). Install: https://cli.github.com
+- **GitHub CLI (`gh`)** — required to fetch issues as VFP input and to create sub-issues. Install: https://cli.github.com
 
 ---
 
@@ -21,27 +21,26 @@ Installs to **7 AI tools** via a single interactive installer. No npm runtime de
 
 ```mermaid
 flowchart TD
-    A([Input]) --> B[Generate VFP]:::agent
-    B --> D[Publish to Notion]:::agent
-    D -- ok --> E[(Notion)]
-    D -- fail --> F([Incomplete])
-    E --> G1
+    A([GitHub Issue / Input]) --> B[Generate VFP]:::agent
+    B --> C[Publish to Notion]:::agent
+    C -- ok --> D[(Notion VFP)]
+    C -- fail --> E([Incomplete — Draft])
+    D --> F[Human reviews & edits]:::human
+    F --> G[Signal: VFP ready]:::human
+    G --> H[Fetch corrected VFP]:::agent
+    H --> I[Generate sub-issues]:::agent
+    I --> J[(GitHub Sub-Issues)]
+    J --> K[Implementation]:::human
 
-    subgraph del[Delivery]
-        direction LR
-        G1[Under Review]:::human --> G2[Accepted]:::human
-        G2 --> G3[In Delivery]:::human
+    subgraph ph3["Phase 3+ — Retrospective (deferred)"]
+        L[Behaviour Validated]:::human
+        M[Retro]:::collab
+        N([Archived Learning ✓])
     end
 
-    G3 --> H[Behaviour Validated]:::human
-    H --> I[Retro]:::collab
-    I --> J([Archived ✓])
-    I -.->|optional| K{Generalise?}:::human
-    K -- yes --> M[Record learning]:::agent
-    M -.->|confirmed| P[Propose change]:::collab
-    P --> Q[Merge]:::human
-    Q --> R[Distribute]:::agent
-    R --> S([Updated ✓])
+    K -.-> L
+    L -.-> M
+    M -.-> N
 
     classDef agent fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
     classDef human fill:#fef9c3,stroke:#ca8a04,color:#713f12
@@ -50,9 +49,9 @@ flowchart TD
 
 **Blue** = agent &nbsp; **Yellow** = human &nbsp; **Purple** = both
 
-**Solid** = required path. &nbsp; **Dashed** = optional.
+**Solid** = active flow. &nbsp; **Dashed** = deferred (Phase 3+).
 
-Publishing to Notion is required — an unpublished packet is incomplete. The core agent is updated only when a pattern is confirmed across multiple independent packets.
+Publishing to Notion is required — an unpublished packet is incomplete. The sub-issue generation step requires a corrected Notion VFP — the agent fetches it directly before creating issues.
 
 ---
 
@@ -149,7 +148,7 @@ Note: Notion pages must be explicitly shared with your integration for the agent
 
 ## Notion MCP setup
 
-The VFP agent publishes artefacts to Notion and can update existing VFP pages during retrospectives. The installer checks whether the Notion MCP server is configured for each selected tool. If not, it prompts once for a Notion integration token and patches the relevant config file automatically.
+The VFP agent publishes artefacts to Notion. The installer checks whether the Notion MCP server is configured for each selected tool. If not, it prompts once for a Notion integration token and patches the relevant config file automatically.
 
 **Get a token:** https://www.notion.so/my-integrations → create an integration → copy the token (`ntn_...`).
 
@@ -185,16 +184,14 @@ When you confirm you want to publish, the agent:
 
 1. Calls the Notion MCP to list accessible pages and presents them numbered
 2. You pick a target page
-3. The VFP is created as a new child page titled `VFP — [description] — [date]` with all 17 sections as structured blocks
-4. The agent returns the page URL
+3. The VFP is created as a new child page titled `VFP — [description]` with all 17 sections as structured blocks using the exact section names from the methodology (`4.1 Request Summary`, `4.2 Intended Outcome`, …, `4.18 Validation Outcome`)
+4. The agent returns the page URL and posts a comment on the source GitHub issue (if applicable)
 
-### Running a retrospective
+### Generating GitHub sub-issues
 
-After a VFP reaches `Behaviour Validated`, invoke the retrospective flow with: *"run a retro on this VFP"*, *"help me fill the validation outcome"*, or *"this has been delivered, let's capture learnings"*.
+Once the VFP has been reviewed and corrected in Notion, tell the agent the VFP is ready — share either the GitHub issue URL or the Notion page URL directly.
 
-The agent walks you through filling section 4.18 (Validation Outcome), updates the VFP in Notion, and optionally extracts learning entries. If an extracted learning confirms a prior `watching` pattern, the agent produces a **Level 3 draft** — a ready-to-apply diff and PR description targeting the relevant methodology doc. The human reviews it, opens a PR, and anyone with the agent installed can run `--update` to receive the merged change.
-
-See [`methodology/retro-procedure.md`](methodology/retro-procedure.md) for the full procedural guide.
+The agent fetches the corrected VFP from Notion, maps each capability slice (§4.11) to a self-contained GitHub issue, and creates them via `gh issue create`. Each sub-issue includes: behavioural goal, scope boundary, done-when conditions, relevant assumptions, risk signals, and a link to the full VFP. Sub-issues are linked to the parent issue via the GitHub sub-issues API.
 
 ### VFP status lifecycle
 
@@ -202,7 +199,7 @@ See [`methodology/retro-procedure.md`](methodology/retro-procedure.md) for the f
 Draft → Under Review → Needs Rework → Accepted for Exploration → In Delivery → Behaviour Validated → Archived Learning
 ```
 
-`Behaviour Validated` is the retro trigger. `Archived Learning` closes the packet lifecycle. See the [Flow](#flow) diagram above for how the retrospective connects to optional learning extraction and core agent updates.
+`Behaviour Validated` → `Archived Learning` via retrospective is **deferred to Phase 3+**. See [`methodology/retro-procedure.md`](methodology/retro-procedure.md) for the full spec.
 
 ---
 
@@ -231,14 +228,14 @@ The installer applies `transformContent()` at write time — the prompt body is 
 
 The [`/methodology`](methodology/) directory contains the canonical reference documents and operational logs this agent is built on:
 
-- [`core-methodology.md`](methodology/core-methodology.md) — AI-Native Delivery & Value Framing core principles (incl. evidence collection, evaluation, and retro-feedback loop)
+- [`core-methodology.md`](methodology/core-methodology.md) — AI-Native Delivery & Value Framing core principles
 - [`vfp-guide.md`](methodology/vfp-guide.md) — full 17-section VFP template reference + post-delivery Validation Outcome (§4.18)
-- [`capability-slicing.md`](methodology/capability-slicing.md) — behavioural slicing patterns
+- [`capability-slicing.md`](methodology/capability-slicing.md) — behavioural slicing patterns (also governs sub-issue generation)
 - [`risk-uncertainty.md`](methodology/risk-uncertainty.md) — uncertainty classification and risk signal detection
 - [`pilot-operational-model.md`](methodology/pilot-operational-model.md) — pilot operating model: roles, ceremonies, cadence, escalation
 - [`validation-evidence-patterns.md`](methodology/validation-evidence-patterns.md) — evidence collection patterns for behavioural validation
 - [`example-library.md`](methodology/example-library.md) — worked VFP examples (grows through operational learning)
-- [`retro-procedure.md`](methodology/retro-procedure.md) — step-by-step retrospective procedure: when to raise, what to update, how learnings are stored
+- [`retro-procedure.md`](methodology/retro-procedure.md) — **Phase 3+ spec** — step-by-step retrospective procedure: when to raise, what to update, how learnings feed back into the methodology
 - [`learnings.md`](methodology/learnings.md) — running log of confirmed patterns extracted from VFP validation outcomes
 
 ---
