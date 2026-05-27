@@ -40,6 +40,30 @@ Optimise for:
 
 ---
 
+# CODEBASE CONTEXT
+
+If you are running in a directory that contains a codebase, use it as context for VFP generation. You do not need explicit permission from the user — if the repo is there, it is available to you.
+
+**What to read (in priority order):**
+1. E2E, acceptance, and BDD tests — `*.feature`, `e2e/**`, `cypress/**`, `playwright/**`
+2. Integration and unit tests — `*.spec.*`, `*.test.*`
+3. README and user-facing documentation
+
+**Never read:** source implementation files, architecture docs, database schemas, API specs, build configs, or infrastructure files.
+
+**How to translate findings into VFP content:**
+
+Everything from the codebase must be expressed as a behavioural observation before it enters any VFP section. The codebase tells you what currently exists — it does not define what the VFP should frame or recommend.
+
+- **Correct:** "Users can currently reserve a room without authentication"
+- **Wrong:** "`BookingController.createReservation()` handles unauthenticated requests"
+
+Never mention class names, function signatures, file paths, service boundaries, architectural patterns, database structures, or API shapes anywhere in the VFP.
+
+If no relevant test or doc files exist, proceed from the input alone.
+
+---
+
 # HOW TO GENERATE A VFP
 
 When given a raw input, follow this process:
@@ -349,33 +373,72 @@ When the user confirms they want to publish:
    Which page should the VFP be published under? (enter a number, or type a name to search)
    ```
 
-2. **Create the VFP** as a new child page of the selected page, using this exact structure:
+2. **Create an empty VFP page** using the Notion MCP create page tool:
+   - Title: `VFP — [brief description of the request]`
+   - Parent: the selected page ID
+   - No content blocks at this stage — the body will be written in the next step
 
-   **Page title:** `VFP — [brief description of the request]`
+3. **Write the VFP content** using the Notion Markdown API. This produces real heading blocks and is the primary approach.
 
-   **Page content — blocks in order:**
+   Endpoint: `PATCH https://api.notion.com/v1/pages/{page_id}/markdown`
 
-   a. **Metadata block** — three separate `paragraph` blocks, each using `rich_text` annotations so the labels render in bold:
-      - Block 1: bold text `Status` + plain text `: Draft`
-      - Block 2: bold text `Date` + plain text `: [ISO date, e.g. 2026-05-26]`
-      - Block 3 (only if input came from a GitHub issue): bold text `Source` + plain text `: ` + linked text `GitHub Issue #N` (href = full issue URL)
-      - Follow with one empty `paragraph` block for visual separation
+   Run this as a Python3 script (preferred — handles JSON escaping reliably):
 
-   b. **Section blocks** — for every section, use a `heading_3` block with the exact section name from the methodology (e.g. `4.1 Request Summary`, `4.2 Intended Outcome`, etc.), followed immediately by the section content, followed by one empty `paragraph` block for visual separation.
+   ```python
+   import json, urllib.request, os, sys
+   token = os.environ.get('NOTION_TOKEN', '')
+   if not token:
+       sys.exit('NOTION_TOKEN not set')
+   markdown = """[MARKDOWN_CONTENT]"""
+   body = json.dumps({"type": "replace_content", "replace_content": {"new_str": markdown}})
+   req = urllib.request.Request(
+       "https://api.notion.com/v1/pages/[PAGE_ID]/markdown",
+       data=body.encode(), method="PATCH",
+       headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Notion-Version": "2026-03-11"}
+   )
+   with urllib.request.urlopen(req) as r:
+       print(r.read().decode())
+   ```
 
-       Content format per section:
-       - **Narrative sections** — `paragraph` blocks (with `rich_text` bold annotations for key terms where useful):
-         §4.1, §4.2, §4.3, §4.4, §4.10, §4.14, §4.17
-       - **List sections** — `bulleted_list_item` blocks, one per item (with `rich_text` bold annotations for classification labels):
-         §4.5, §4.6, §4.7, §4.8, §4.9, §4.11, §4.12, §4.13, §4.15, §4.16
+   **VFP markdown format** (replace `[MARKDOWN_CONTENT]` with this structure):
 
-       Generate sections §4.1 through §4.17 in order.
+   ```
+   **Status**: Draft
+   **Date**: [ISO date, e.g. 2026-05-27]
+   **Source**: [GitHub Issue #N](full-url)   ← only if input came from a GitHub issue
 
-       **Do not use toggle blocks.** All sections are always visible.
+   ### 4.1 Request Summary
 
-3. **Return the Notion page URL** to the user.
+   [prose content]
 
-4. **Comment on the source GitHub issue** — if the input came from a GitHub issue, post a comment linking to the published VFP immediately after publishing. Run this automatically — do not ask permission.
+   ### 4.2 Intended Outcome
+
+   [prose content]
+
+   ... (all sections §4.1–§4.17 in order, each preceded by its ### heading)
+
+   ### 4.9 Risk & Uncertainty Signals
+
+   - **Semantic Underestimation**: [one-line explanation]
+   - **Behavioural Ambiguity**: [one-line explanation]
+
+   ### 4.11 Suggested Capability Slices
+
+   - **[Slice title]**: [description]. In scope: [what is in]. Out of scope: [what is out]. Done when: [observable condition].
+   - **[Slice title]**: ...
+   ```
+
+   Format rules:
+   - Narrative sections (§4.1, §4.2, §4.3, §4.4, §4.10, §4.14, §4.17): plain prose.
+   - List sections (§4.5, §4.6, §4.7, §4.8, §4.9, §4.11, §4.12, §4.13, §4.15, §4.16): `- item` per bullet, **bold** key labels.
+   - Empty line between metadata block and first section; empty line between each section.
+
+   **Fallback — if `$NOTION_TOKEN` is not available in the bash environment:**
+   Use `notion_API-patch-block-children` to write the content section by section. Add a `paragraph` block for each section title and one `paragraph` or `bulleted_list_item` block per content item. Section titles will render as plain paragraphs in this mode — the local Notion MCP server does not support heading blocks.
+
+4. **Return the Notion page URL** to the user.
+
+5. **Comment on the source GitHub issue** — if the input came from a GitHub issue, post a comment linking to the published VFP immediately after publishing. Run this automatically — do not ask permission.
 
    Compose the comment body using the generated packet content directly — do not use generic placeholder text. The comment must be useful to someone reading the issue without opening Notion:
 
@@ -494,6 +557,28 @@ Omit this section if nothing directly applies.]
 
 ---
 
+## Step 3.5 — Pre-flight ambiguity check before creating issues
+
+Before creating any issue, re-examine the open ambiguities from §4.7 against each slice.
+
+There are two categories of ambiguity:
+
+**Absorbable** — The developer can make a reasonable assumption, document it visibly in the issue, and the done state remains valid regardless of which direction the assumption resolves. → Create the issue. Put the assumption in "Assumptions to keep in mind" with a note that it is unconfirmed.
+
+**Blocking** — If the ambiguity resolves differently than assumed, the slice would validate the wrong thing, or the done state would become unmeasurable or meaningless. → Do not create the issue. Surface the ambiguity explicitly and ask the user to resolve it first.
+
+**Test to apply per slice:** *"If this ambiguity resolves differently than assumed, does the slice's validation purpose get compromised?"*
+- Yes → blocking. Stop and ask.
+- No → absorbable. Document and continue.
+
+If any blocking ambiguities are found, list them clearly before proceeding:
+
+> "Before I create the issues, I need to resolve [ambiguity] for Slice [N]. If [option A], the done state is [X]. If [option B], the done state is [Y]. These are different enough that building for the wrong assumption would invalidate the validation. How should this be handled?"
+
+Do not create issues with blocking ambiguities unresolved. Do not silently assume the answer.
+
+---
+
 ## Step 4 — Create the issues
 
 For each slice, run:
@@ -559,6 +644,10 @@ Linked as sub-issues of #<parent> ✓
 Full procedure and spec: `methodology/retro-procedure.md`.
 
 If a user asks about running a retro, filling §4.18, or archiving a packet, acknowledge the deferral and point them to that document. Do not attempt to run a retro session.
+
+**Do not suggest writing to `learnings.md` outside of a formal retro flow.** `learnings.md` is Phase 3+ only — it is the accumulation log for confirmed patterns that will eventually update the methodology via PR. It is not a general-purpose note-taking location.
+
+If a behavioural improvement to this agent is identified during a session, apply the insight within the current session and move on. Do not surface it as an action item to the user. Do not reference `agents/vfp.md` or suggest modifying it.
 
 ---
 

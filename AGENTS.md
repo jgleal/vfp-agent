@@ -143,14 +143,23 @@ Reads `~/.config/vfp-agent/state.json` (`{ sha, tools, installedAt }`), fetches 
 **State file location**
 `~/.config/vfp-agent/state.json` on macOS/Linux. `%APPDATA%\vfp-agent\state.json` on Windows. Written after a successful install. Read by `--update`.
 
-**Methodology changes are gated**
+**Codebase access — tests and docs only**
+When running in a directory with a repo, the agent uses the codebase as context by default — no explicit user permission required. Read order: E2E/acceptance/BDD tests → integration/unit tests → README and user-facing docs. Never reads source implementation files, schemas, configs, or infrastructure. All findings are translated to behavioural observations before entering any VFP section — class names, function signatures, file paths, and architectural patterns never appear in the output. If no relevant test or doc files exist, the agent proceeds from the input alone.
+
+
 `methodology/` docs are only updated at Level 3: confirmed pattern across 2+ independent packets, via PR. Single-event observations go to `learnings.md` as `watching`. The agent proposes changes but does not apply them — human reviews and merges via `gh pr create`.
 
 **`methodology/learnings.md` is not runtime context**
 It is source material for doc evolution. The agent writes to it directly using file tools. It is not injected into agent sessions.
 
-**Notion MCP block type limitation**
-The `notion_API-patch-block-children` tool only supports two block types: `paragraph` and `bulleted_list_item`. Heading blocks (`heading_1`, `heading_2`, `heading_3`) are not supported. This is a deliberate simplification in the official `@notionhq/notion-mcp-server` OpenAPI spec — the full Notion API supports many more block types, but the MCP package restricts the `blockObjectRequest` schema to these two. Confirmed in the package source (`scripts/notion-openapi.json`, v2.2.1). As a result, VFP section titles (§4.1–§4.17) are published as plain paragraphs regardless of any heading instruction in the agent prompt. This is not an agent error and not a configuration issue. If the MCP spec is updated to support heading blocks in future, the agent prompt already instructs `heading_3` for section titles and will adopt it automatically.
+**Notion MCP block type limitation and Markdown API workaround**
+The `notion_API-patch-block-children` tool only supports two block types: `paragraph` and `bulleted_list_item`. Heading blocks are not supported — a deliberate simplification in `@notionhq/notion-mcp-server` v2.2.1 (`scripts/notion-openapi.json`).
+
+The agent now uses a two-step publish approach to bypass this:
+1. Create the empty page via the Notion MCP tool (title + parent).
+2. Write VFP content via the **Notion Markdown API**: `PATCH https://api.notion.com/v1/pages/{page_id}/markdown` with `Notion-Version: 2026-03-11` and `Authorization: Bearer $NOTION_TOKEN`. Uses `replace_content` with the full VFP as enhanced markdown — `###` produces real heading_3 blocks.
+
+The `$NOTION_TOKEN` for the direct API call must be available in the bash environment. The installer writes it to the MCP subprocess env only (inside the tool's JSON config), not to the shell profile. If the token is not in the bash env, the agent falls back to the MCP block approach (section titles become plain paragraphs).
 
 ---
 
@@ -217,3 +226,9 @@ gh issue create --repo <owner/repo> --title "..." --body "..."   # create sub-is
 gh api repos/<owner>/<repo>/issues/<parent>/sub_issues \
   --method POST -f sub_issue_id=<child>                 # link sub-issue to parent
 ```
+
+**Python3**
+Required for the Notion Markdown API publish step. Used to make the `PATCH /v1/pages/:id/markdown` call with proper JSON escaping. Falls back gracefully to Notion MCP block API if unavailable or if `$NOTION_TOKEN` is not in the bash environment.
+
+**Notion Markdown API**
+`PATCH https://api.notion.com/v1/pages/:page_id/markdown` with `Notion-Version: 2026-03-11`. Requires `$NOTION_TOKEN` in the bash environment (separate from the MCP subprocess env). The `replace_content` command replaces the entire page body with enhanced markdown. `###` produces real `heading_3` blocks. The installer stores `NOTION_TOKEN` in the MCP config only — not in the shell profile. Users who want headings can export it in their shell profile.
