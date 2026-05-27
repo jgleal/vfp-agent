@@ -149,6 +149,9 @@ Reads `~/.config/vfp-agent/state.json` (`{ sha, tools, installedAt }`), fetches 
 **`methodology/learnings.md` is not runtime context**
 It is source material for doc evolution. The agent writes to it directly using file tools. It is not injected into agent sessions.
 
+**Notion MCP block type limitation**
+The `notion_API-patch-block-children` tool only supports two block types: `paragraph` and `bulleted_list_item`. Heading blocks (`heading_1`, `heading_2`, `heading_3`) are not supported. As a result, VFP section titles (§4.1–§4.17) are published as plain paragraphs regardless of any heading instruction in the agent prompt. This is a tool limitation, not an agent error. If the MCP is updated to support heading blocks in future, the agent prompt already instructs `heading_3` for section titles and will adopt it automatically.
+
 ---
 
 ## Tool install paths
