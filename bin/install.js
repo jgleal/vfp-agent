@@ -22,8 +22,24 @@ const readline      = require('readline');
 
 const REPO          = 'jgleal/vfp-agent';
 const RAW_BASE      = `https://raw.githubusercontent.com/${REPO}/main`;
-const AGENT_SOURCE  = 'agents/vfp.md';   // single source file in the repo
+const AGENT_SOURCE  = 'agents/vfp.md';
 const GH_API_BASE   = `https://api.github.com/repos/${REPO}`;
+
+// Methodology skill files — source paths in repo and their skill names.
+const SKILLS = [
+  { name: 'vfp-core-methodology',       src: 'methodology/skills/vfp-core-methodology/SKILL.md'       },
+  { name: 'vfp-guide',                  src: 'methodology/skills/vfp-guide/SKILL.md'                  },
+  { name: 'vfp-capability-slicing',     src: 'methodology/skills/vfp-capability-slicing/SKILL.md'     },
+  { name: 'vfp-risk-uncertainty',       src: 'methodology/skills/vfp-risk-uncertainty/SKILL.md'       },
+  { name: 'vfp-validation-evidence',    src: 'methodology/skills/vfp-validation-evidence/SKILL.md'    },
+  { name: 'vfp-retro-procedure',        src: 'methodology/skills/vfp-retro-procedure/SKILL.md'        },
+  { name: 'vfp-pilot-operational-model',src: 'methodology/skills/vfp-pilot-operational-model/SKILL.md'},
+  { name: 'vfp-example-library',        src: 'methodology/skills/vfp-example-library/SKILL.md'        },
+];
+
+// Tools that natively support multi-file skills (agent + separate skill files).
+// All others receive a single merged file.
+const SKILLS_NATIVE = new Set(['opencode', 'claude']);
 
 // Marker fences for append-style installs (Windsurf).
 const BLOCK_BEGIN = '<!-- vfp-agent-begin -->';
@@ -67,6 +83,12 @@ const AGENT_DEST = {
   codex:    () => path.join(os.homedir(), '.codex', 'agents', 'vfp.md'),
   vscode:   () => path.join(os.homedir(), '.copilot', 'agents', 'vfp.agent.md'),
   windsurf: () => path.join(os.homedir(), '.codeium', 'windsurf', 'memories', 'global_rules.md'),
+};
+
+// Skills destination root per provider (only for SKILLS_NATIVE tools).
+const SKILLS_DEST = {
+  opencode: () => path.join(opencodeConfigDir(), 'skills'),
+  claude:   () => path.join(os.homedir(), '.claude', 'skills'),
 };
 
 // ── Frontmatter transform ──────────────────────────────────────────────────
@@ -336,7 +358,7 @@ function getCurrentSha(repoRoot) {
 }
 
 // ── Source file resolution ─────────────────────────────────────────────────
-// Reads agents/vfp.md from local clone or fetches from GitHub.
+// Reads agents/vfp.md (and skill files) from local clone or fetches from GitHub.
 // Pass forceRemote=true to always fetch from GitHub (used by --update).
 function detectRepoRoot() {
   const root = path.resolve(path.dirname(__filename), '..');
@@ -344,12 +366,8 @@ function detectRepoRoot() {
   return null;
 }
 
-function readSourceFile(repoRoot, forceRemote) {
-  if (repoRoot && !forceRemote) {
-    return fs.readFileSync(path.join(repoRoot, AGENT_SOURCE), 'utf8');
-  }
-  const url = `${RAW_BASE}/${AGENT_SOURCE}`;
-  process.stdout.write(`  fetching ${url}\n`);
+function fetchRemoteFile(relativePath) {
+  const url = `${RAW_BASE}/${relativePath}`;
   const r = child_process.spawnSync(process.execPath, ['-e', `
     const h = require('https');
     h.get('${url}', res => {
@@ -363,6 +381,38 @@ function readSourceFile(repoRoot, forceRemote) {
   `], { encoding: 'utf8', timeout: 15000 });
   if (r.status !== 0) throw new Error(`failed to fetch ${url}: ${r.stderr || ''}`);
   return r.stdout;
+}
+
+function readSourceFile(repoRoot, forceRemote) {
+  if (repoRoot && !forceRemote) {
+    return fs.readFileSync(path.join(repoRoot, AGENT_SOURCE), 'utf8');
+  }
+  process.stdout.write(`  fetching ${RAW_BASE}/${AGENT_SOURCE}\n`);
+  return fetchRemoteFile(AGENT_SOURCE);
+}
+
+// Read all skill files — returns array of { name, content }.
+function readSkillFiles(repoRoot, forceRemote) {
+  return SKILLS.map(skill => {
+    let content;
+    if (repoRoot && !forceRemote) {
+      content = fs.readFileSync(path.join(repoRoot, skill.src), 'utf8');
+    } else {
+      content = fetchRemoteFile(skill.src);
+    }
+    return { name: skill.name, content };
+  });
+}
+
+// Build merged single-file content for clients that don't support native skills.
+// Strips frontmatter from each skill file and appends as labelled sections.
+function buildMergedContent(agentSource, toolId, skillFiles) {
+  const transformed = transformContent(agentSource, toolId);
+  const sections = skillFiles.map(({ name, content }) => {
+    const { body } = parseFm(content);
+    return `\n\n---\n<!-- methodology: ${name} -->\n\n${body.trimStart()}`;
+  });
+  return transformed + sections.join('');
 }
 
 // ── File write helpers ─────────────────────────────────────────────────────
@@ -606,12 +656,16 @@ async function interactiveSelect(detected, all, c, opts) {
 
 // ── Per-provider install ───────────────────────────────────────────────────
 async function installProvider(prov, ctx) {
-  const { say, note, warn, opts, source, results, sharedNotionToken } = ctx;
+  const { say, note, warn, opts, source, skillFiles, results, sharedNotionToken } = ctx;
   const { id, label, supportsAgents } = prov;
 
   say(`→ ${label}`);
 
-  const content = transformContent(source, id);
+  // Native skills clients: write agent file + individual skill files.
+  // Other clients: write single merged file containing everything.
+  const content = SKILLS_NATIVE.has(id)
+    ? transformContent(source, id)
+    : buildMergedContent(source, id, skillFiles);
   const dest    = AGENT_DEST[id]();
 
   const fileResult = supportsAgents
@@ -624,6 +678,17 @@ async function installProvider(prov, ctx) {
   } else {
     note(`  already installed — use --force to overwrite`);
     results.skipped.push(id);
+  }
+
+  // Write skill files for native-skills clients (opencode, claude).
+  if (SKILLS_NATIVE.has(id) && SKILLS_DEST[id]) {
+    const skillsRoot = SKILLS_DEST[id]();
+    for (const { name, content: skillContent } of skillFiles) {
+      const skillDest = path.join(skillsRoot, name, 'SKILL.md');
+      const skillResult = writeFile(skillDest, skillContent, opts, opts.dryRun);
+      if (skillResult === 'ok' && !opts.dryRun)
+        process.stdout.write(`  skill: ${skillDest}\n`);
+    }
   }
 
   // Notion MCP prerequisite
@@ -746,8 +811,9 @@ async function main() {
     else           note(`  installing latest (${latestSha.slice(0, 7)})`);
 
     // Always fetch the source from remote so we get the latest version.
-    const source = readSourceFile(repoRoot, true);
-    const active = PROVIDERS.filter(p => state.tools.includes(p.id));
+    const source     = readSourceFile(repoRoot, true);
+    const skillFiles = readSkillFiles(repoRoot, true);
+    const active     = PROVIDERS.filter(p => state.tools.includes(p.id));
 
     process.stdout.write(`\nUpdating ${active.length} tool(s)...\n\n`);
 
@@ -755,7 +821,7 @@ async function main() {
     opts.nonInteractive = true;
     const results = { installed: [], skipped: [], failed: [] };
     const sharedNotionToken = { value: null };
-    const ctx = { say, note, warn, opts, source, results, sharedNotionToken };
+    const ctx = { say, note, warn, opts, source, skillFiles, results, sharedNotionToken };
 
     for (const p of active) {
       try {
@@ -780,8 +846,9 @@ async function main() {
     process.exit(results.failed.length ? 1 : 0);
   }
 
-  // Read source once — all tool writes derive from it.
-  const source = readSourceFile(repoRoot);
+  // Read source and skill files once — all tool writes derive from them.
+  const source     = readSourceFile(repoRoot);
+  const skillFiles = readSkillFiles(repoRoot);
 
   const allDetected = PROVIDERS.filter(p => detectMatch(p.detect));
 
@@ -814,7 +881,7 @@ async function main() {
   process.stdout.write(`\nInstalling to ${active.length} tool(s)...\n\n`);
 
   const sharedNotionToken = { value: null };
-  const ctx = { say, note, warn, opts, source, results, sharedNotionToken };
+  const ctx = { say, note, warn, opts, source, skillFiles, results, sharedNotionToken };
 
   for (const p of active) {
     try {

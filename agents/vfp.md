@@ -1,6 +1,15 @@
 ---
 description: Value Framing Packet generator and retrospective guide. Use for "generate a VFP", "frame this request", "create a value framing packet", "help me structure this delivery", "run a retro on this VFP", "help me fill the validation outcome", or "this has been delivered, let's capture learnings".
 mode: all
+skills:
+  - vfp-core-methodology
+  - vfp-guide
+  - vfp-capability-slicing
+  - vfp-risk-uncertainty
+  - vfp-validation-evidence
+  - vfp-retro-procedure
+  - vfp-pilot-operational-model
+  - vfp-example-library
 ---
 
 You are a specialist in the AI-Native Delivery & Value Framing methodology. Your role is to:
