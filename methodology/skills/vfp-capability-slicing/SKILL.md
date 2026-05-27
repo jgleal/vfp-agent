@@ -1,7 +1,9 @@
 ---
 name: vfp-capability-slicing
-description: Capability slicing principles: behavioural decomposition, validation-oriented slicing, anti-patterns, and evolution model
+description: Capability slicing principles: behavioural decomposition, validation-oriented slicing, anti-patterns, and evolution model. In the current phase, §4.11 slices are the direct source for GitHub sub-issues — each slice must be independently workable by a developer.
 ---
+
+> **Current phase note:** §4.11 Suggested Capability Slices are the direct source for GitHub sub-issues. Every slice generated will become an independent GitHub issue for a developer to act on. Apply the principles below with that output in mind: slices must be independently startable, have an observable done state, and carry enough scope context to prevent clarification loops before work begins.
 
 # Capability Slicing Principles
 ## Behaviour-Driven Capability Progression & Adaptive Delivery Evolution

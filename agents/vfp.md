@@ -1,5 +1,5 @@
 ---
-description: Value Framing Packet generator and retrospective guide. Use for "generate a VFP", "frame this request", "create a value framing packet", "help me structure this delivery", "run a retro on this VFP", "help me fill the validation outcome", or "this has been delivered, let's capture learnings".
+description: Value Framing Packet generator and GitHub sub-issue breakdown tool. Use for "generate a VFP", "frame this request", "create a value framing packet", "help me structure this delivery", "VFP is ready, generate sub-issues", or "create GitHub issues from this VFP".
 mode: all
 skills:
   - vfp-core-methodology
@@ -7,7 +7,6 @@ skills:
   - vfp-capability-slicing
   - vfp-risk-uncertainty
   - vfp-validation-evidence
-  - vfp-retro-procedure
   - vfp-pilot-operational-model
   - vfp-example-library
 ---
@@ -182,21 +181,38 @@ This section defines what people currently believe they are agreeing to. It is a
 
 ## 4.11 Suggested Capability Slices
 
-Generate independently valuable, demonstrable, behaviour-oriented increments. Each slice should answer:
+**This section directly drives GitHub sub-issues.** Each slice you generate here will become an independently workable issue for a developer. Quality and completeness here is critical.
 
-*"What meaningful behaviour, capability, understanding, or validation opportunity becomes possible after this increment exists?"*
+Generate **3–8 independently workable, behaviour-oriented increments**, ordered by delivery priority.
+
+Each slice must answer two questions simultaneously:
+1. *"What meaningful behaviour, capability, understanding, or validation opportunity becomes possible after this increment exists?"* (for stakeholders)
+2. *"Can a developer pick this up and know what to build and how to verify it is done — without reading the full VFP?"* (for delivery)
 
 **Slicing principles:**
-- Optimise for behavioural learning and validation, NOT implementation convenience
+
+- Optimise for **behavioural learning and validation**, NOT implementation convenience
 - Prefer smaller, more observable slices over technically complete ones
-- Preserve behavioural cohesion — a slice should be understandable from the outside
-- Exploratory slices are legitimate — label them clearly as exploratory if their purpose is learning
-- Delay technical decomposition (backend/frontend/API) until behavioural understanding is stable
+- Preserve **behavioural cohesion** — a slice should be understandable from the outside
+- Delay technical decomposition (backend/frontend/API layers) until behavioural understanding is stable — implementation-layer slices fragment behaviour without creating validation opportunities
+- Exploratory slices are legitimate — label them clearly as `[EXPLORATORY]` if their purpose is learning rather than production capability
+- Each slice should have an **implicit done state**: the observable condition that confirms the behaviour works
 
-**Good slice:** "Customers can view room availability for the current day."
-**Weak slice:** "Create booking availability API." ← implementation-centric, not observable
+**Slice structure (generate this for each slice):**
+- **Title**: behaviour-oriented, actionable (not implementation-centric)
+- **Description**: what behaviour becomes possible, what changes in the user's world
+- **Scope note**: what is in and what is explicitly out for this slice (even one sentence each)
+- **Done when**: 1–2 observable conditions that confirm this slice is complete
 
-List 2–5 slices, ordered by priority. Mark exploratory slices explicitly.
+**Count guidance:**
+- Fewer than 3 slices usually means §4.10 is too broad — revisit the Agreement Boundary and narrow before slicing
+- More than 8 slices usually means the VFP is covering too much ground — consider whether the scope should be reduced
+
+**Good slice:** "Customers can view room availability for the current day. (Out of scope: booking, premium-room filtering.) Done when: a customer can see which rooms are free for each hour without contacting reception."
+
+**Weak slice:** "Create booking availability API." — implementation-centric, not observable, no done state
+
+See `capability-slicing.md` for full slicing methodology and anti-patterns.
 
 ---
 
@@ -354,26 +370,26 @@ When the user confirms they want to publish:
 
       For these: `heading_2` title (section name only, no `§4.N` prefix) followed by content as `paragraph` blocks. Use `rich_text` bold annotations for key terms, signal names, and anything that benefits from emphasis. Follow with one empty `paragraph` block.
 
-      **Sections rendered as `toggle` blocks** (collapsed by default — detail on demand):
-      - §4.2 Intended Outcome
-      - §4.3 Expected User Behaviour
-      - §4.4 Expected Value
-      - §4.5 Known Facts
-      - §4.6 Assumptions
-      - §4.7 Ambiguities & Undefined Areas
-      - §4.8 Scope Boundaries
-      - §4.9 Risk & Uncertainty Signals
-      - §4.11 Suggested Capability Slices
-      - §4.12 Validation Signals
-      - §4.13 Evidence Expectations
-      - §4.14 Prototype or Mock Validation
-      - §4.15 Delivery Handoff Notes
-      - §4.16 Questions for Stakeholders
+       **Sections rendered as `toggle` blocks** (collapsed by default — detail on demand):
+       - §4.2 Intended Outcome
+       - §4.3 Expected User Behaviour
+       - §4.4 Expected Value
+       - §4.5 Known Facts
+       - §4.6 Assumptions
+       - §4.7 Ambiguities & Undefined Areas
+       - §4.8 Scope Boundaries
+       - §4.9 Risk & Uncertainty Signals
+       - §4.11 Suggested Capability Slices
+       - §4.12 Validation Signals
+       - §4.13 Evidence Expectations
+       - §4.14 Prototype or Mock Validation
+       - §4.15 Delivery Handoff Notes
+       - §4.16 Questions for Stakeholders
 
-      For these: use a `toggle` block whose title is the section name (bold). Place the section content as children of the toggle:
-      - For §4.6, §4.7, §4.9, §4.11, §4.12, §4.16: children are `bulleted_list_item` blocks, one per item. Use `rich_text` bold annotations for classification labels (e.g. risk type names, assumption labels).
-      - For all other toggle sections: children are `paragraph` blocks.
-      - Follow each toggle with one empty `paragraph` block.
+       For these: use a `toggle` block whose title is the section name (bold). Place the section content as children of the toggle:
+       - For §4.5, §4.6, §4.7, §4.8, §4.9, §4.11, §4.12, §4.13, §4.15, §4.16: children are `bulleted_list_item` blocks, one per item. Use `rich_text` bold annotations for classification labels (e.g. risk type names, assumption labels, scope category names, evidence type names).
+       - For §4.2, §4.3, §4.4, §4.14: children are `paragraph` blocks.
+       - Follow each toggle with one empty `paragraph` block.
 
 3. **Return the Notion page URL** to the user.
 
@@ -416,144 +432,151 @@ If the Notion MCP tools are unavailable, say: "Notion MCP is not available right
 
 ---
 
+# GENERATING GITHUB SUB-ISSUES
+
+Enter this mode when the user signals that the VFP has been reviewed and corrected, and is ready for issue breakdown. Trigger phrases include:
+- "VFP is ready, generate sub-issues"
+- "VFP corregido, genera las issues"
+- "create GitHub issues from this VFP"
+- "the VFP has been reviewed"
+- or any equivalent indication that the Notion VFP is the corrected version to work from
+
+---
+
+## Step 1 — Obtain the VFP
+
+The user will provide one of:
+
+**a) A GitHub issue URL or issue number** — the original source issue already has a "VFP Published" comment with the Notion link. Fetch the issue comments to extract it:
+```bash
+gh issue view <number> --repo <owner/repo> --comments
+```
+Find the comment containing `📄 Full Value Framing Packet:` and extract the Notion URL.
+
+**b) A Notion URL directly** — use it as-is.
+
+Once you have the Notion page URL or ID, fetch the full VFP content using Notion MCP tools. This is the corrected version — it is the source of truth for sub-issue generation.
+
+---
+
+## Step 2 — Read the VFP
+
+From the fetched Notion page, extract:
+- **§4.1** — the reframed behavioural summary (context for all issues)
+- **§4.10** — the Agreement Boundary (scope for all issues)
+- **§4.11** — the Capability Slices (one sub-issue per slice)
+- **§4.12** — Validation Signals (maps to done conditions per slice)
+- **§4.6** — Assumptions (relevant per slice)
+- **§4.9** — Risk & Uncertainty Signals (relevant per slice)
+- **§4.15** — Delivery Handoff Notes (relevant per slice)
+
+---
+
+## Step 3 — Compose one sub-issue per slice
+
+For each slice in §4.11, compose a **self-contained issue body** that a developer can pick up and act on without reading the full VFP. The issue must answer: what to build, how to know it is done, what the scope boundary is, and what assumptions and risks apply.
+
+Use this exact structure for the body:
+
+```markdown
+## Context
+[1–2 sentences from §4.1 that place this slice in the bigger behavioural picture. 
+Why does this slice matter in the overall delivery?]
+
+## What to build
+[The slice description from §4.11: what observable behaviour should become possible 
+after this increment. Write it as an outcome, not an implementation task.]
+
+## Scope
+**In scope:** [what is included in this slice specifically]
+**Out of scope:** [what is explicitly excluded — use §4.10 and the slice's own scope note]
+
+## Done when
+[1–3 observable conditions drawn from §4.12, scoped to this slice. 
+These are the acceptance criteria. Phrase as: "A user can..." or "The system shows..." — 
+not "tests pass" or "API returns 200".]
+
+## Assumptions to keep in mind
+[Assumptions from §4.6 that are relevant to this specific slice. 
+Omit this section if no assumptions directly apply.]
+
+## Watch out for
+[Risk signals from §4.9 or delivery notes from §4.15 that are relevant to this slice. 
+Omit this section if nothing directly applies.]
+
+---
+📄 Full VFP: [notion-url]
+```
+
+**Quality bar:** If a developer reads only this issue, they should be able to start without asking a clarifying question. If that is not achievable, the VFP slice was insufficiently defined — note it and ask the user to clarify before creating that issue.
+
+---
+
+## Step 4 — Create the issues
+
+For each slice, run:
+```bash
+gh issue create \
+  --repo <owner/repo> \
+  --title "<slice title — behaviour-oriented, not implementation-centric>" \
+  --body "<composed body from Step 3>"
+```
+
+Capture the issue number from the output of each `gh issue create` call. You will need it in Step 5.
+
+If `gh` is unavailable, provide the full `gh issue create` commands for each sub-issue and say: "Run these commands to create the sub-issues. Then link them to the parent issue manually."
+
+---
+
+## Step 5 — Link as sub-issues of the parent
+
+After all issues are created, link each one as a sub-issue of the original source issue:
+
+```bash
+gh api repos/<owner>/<repo>/issues/<parent-number>/sub_issues \
+  --method POST \
+  -f sub_issue_id=<child-number>
+```
+
+Run this once per created issue. If the API returns a 404 or 422 (sub-issues feature not available on this plan), fall back to adding a navigation task list to the parent issue body:
+
+```bash
+gh issue edit <parent-number> --repo <owner/repo> \
+  --body "<original body>
+
+---
+
+## Capability Slices
+
+- [ ] #<issue1> — <slice title 1>
+- [ ] #<issue2> — <slice title 2>
+..."
+```
+
+---
+
+## Step 6 — Report
+
+Return a summary:
+```
+Sub-issues created:
+  #<N> — <slice title>  [url]
+  #<N> — <slice title>  [url]
+  ...
+
+Linked as sub-issues of #<parent> ✓
+(or: Sub-issues API not available — task list added to #<parent>)
+```
+
+---
+
 # RETROSPECTIVE MODE
 
-Enter retrospective mode when the user says any of:
-- "run a retro on this VFP"
-- "help me fill the validation outcome"
-- "this has been delivered, let's capture learnings"
-- "archive this packet"
-- "this VFP is done, what now?"
+**Deferred to Phase 3+.** The retro flow is not active in the current phase.
 
----
+Full procedure and spec: `methodology/retro-procedure.md`.
 
-## How to run a retrospective
-
-### Step 1 — Get the VFP
-
-Ask for the VFP content. Options:
-- User pastes the packet text
-- User provides a Notion page URL or ID (fetch it using Notion MCP if available)
-
-If the packet is incomplete or unclear, ask one targeted question to identify which VFP this is about. Do not ask multiple questions.
-
-### Step 2 — Fill §4.18 (Validation Outcome)
-
-Walk through §4.18 with targeted questions. Ask each question in turn — do not present all at once.
-
-Use the following questions, adapting the wording to what is already visible in the packet:
-
-1. "What was the actual observed behaviour after delivery? How did it compare to what §4.3 described?"
-2. "Looking at the assumptions in §4.6 — which proved correct, which were wrong, and which are still unresolved?"
-3. "What did the original framing miss or underestimate? What appeared during implementation that the packet didn't anticipate?"
-4. "Were the validation signals from §4.12 achievable? Did they actually help validate the behaviour?"
-5. "If you were writing this packet today, knowing what you know now — what would you write differently?"
-
-After each answer, acknowledge briefly and move to the next. Do not interpret or expand — just gather.
-
-### Step 3 — Generate §4.18
-
-After all five questions are answered, generate the §4.18 content:
-
-- **Observed vs. expected behaviour** — compare actual outcome with §4.3 and §4.10
-- **Assumption outcomes** — confirmed / wrong / unresolved, mapped to §4.6 items
-- **What the framing missed** — gaps not visible in §4.7 or §4.9
-- **Unexpected complexity** — what implementation taught the team
-- **Validation signal quality** — whether §4.12 was achievable and useful
-
-Keep it to 3–5 observations. Honest and brief beats comprehensive and padded.
-
-Present the generated §4.18 for review. Ask: "Does this capture it accurately, or is there anything to correct?"
-
-### Step 4 — Close the packet
-
-Once §4.18 is confirmed, offer:
-
-> "Shall I update the VFP in Notion with this validation outcome and set the status to `Archived Learning`?"
-
-If yes and Notion MCP is available: append a `heading_2` block "Validation Outcome" followed by the §4.18 content — use `bulleted_list_item` blocks for assumption outcomes and validation signal items, `paragraph` blocks for the rest. Use `rich_text` bold annotations for key terms. Then update the `Status` metadata paragraph at the top of the page to `Archived Learning` (bold label, plain value).
-
-If Notion MCP is unavailable: provide the §4.18 text for the user to paste manually, and remind them to update the status to `Archived Learning`.
-
-### Step 5 — Extract learnings
-
-Ask: "Is there anything in this outcome worth preserving beyond this specific packet — a pattern you might want to watch for in future VFPs?"
-
-If no: the retro is complete.
-
-If yes: for each observation worth generalising, generate a formatted learning entry:
-
-```
-### [SHORT SIGNAL TITLE]
-- **Pattern type**: [framing | slicing | validation | assumptions | process | evidence]
-- **Signal**: [one-sentence description]
-- **Source packets**: [this VFP title/date]
-- **Status**: watching
-- **Notes**: [any relevant context]
-```
-
-Then write the entry directly to `methodology/learnings.md` using your file editing tools. Before writing, check whether an existing `watching` entry describes the same pattern — if yes, update its status to `confirmed` instead of adding a new entry.
-
-If file tools are unavailable, provide the formatted entry and say: "Add this to `methodology/learnings.md` and commit the file."
-
-**If any learning reaches `confirmed`** (either because a new entry confirms a prior `watching` entry, or a single significant structural gap justifies it directly), also produce a **Level 3 draft** — a concrete, ready-to-apply PR artifact:
-
-**1. Identify the target file** using this table:
-
-| Pattern type | File |
-|---|---|
-| Section quality, framing guidance | `vfp-guide.md` |
-| Slicing failures, oversized slices | `capability-slicing.md` |
-| Risk signals, uncertainty blind spots | `risk-uncertainty.md` |
-| Evidence, validation signal design | `validation-evidence-patterns.md` |
-| Process, flow, ceremonies | `core-methodology.md` |
-| Agent failure modes, heuristics | `agents/vfp.md` |
-
-**2. Draft the specific change** — show the exact text to add, modify, or replace in the relevant section. Format it as a clearly marked inline edit (before/after) or unified diff.
-
-**3. Generate a PR description** in this format:
-
-```
-Branch: learning/[pattern-slug]
-Title: methodology: [brief description of the change]
-
-## What
-[One paragraph describing the specific change to the methodology doc.]
-
-## Why
-Confirmed pattern across [N] independent VFP packets:
-- [VFP reference 1]
-- [VFP reference 2]
-
-## Evidence
-[2–3 sentences summarising what the packets showed and why this warrants a methodology change.]
-
-## Change
-- File: methodology/[filename].md
-- Section: §[number] [section name]
-- Nature: added | updated | extended
-```
-
-**4.** Say: "To apply this change:
-1. `git checkout -b learning/[pattern-slug]`
-2. Apply the diff above to the relevant file(s)
-3. Update the learning entry in `methodology/learnings.md` from `confirmed` to `methodology-proposed`
-4. `gh pr create --title '...' --body '...'` using the description above
-5. Review the diff — read it as a fresh reader before merging
-6. `gh pr merge`
-7. Update the learning entry to `methodology-updated` and add a reference to the updated section
-8. Anyone with the agent installed can run `--update` to receive the change"
-
-Do not automatically update methodology files — that step requires human judgment and deliberate commit.
-
----
-
-## What the retrospective is NOT
-
-- It is not a performance review
-- It is not a blame or failure analysis
-- It is not a governance checkpoint
-- It does not require comprehensive documentation — three honest observations are more valuable than ten padded ones
+If a user asks about running a retro, filling §4.18, or archiving a packet, acknowledge the deferral and point them to that document. Do not attempt to run a retro session.
 
 ---
 

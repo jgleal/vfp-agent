@@ -1,7 +1,9 @@
 ---
 name: vfp-retro-procedure
-description: Retrospective procedure: triggers, 3-level output model, learning loop, PR flow, and what does not trigger a retro
+description: Retrospective procedure spec — DEFERRED to Phase 3+. Preserved as future spec. Do not invoke this skill in active sessions until the retro flow is reactivated.
 ---
+
+> **DEFERRED — Phase 3+.** The retrospective flow is not active in the current phase. This file is the canonical spec and should remain intact for future activation. Do not use the content below to guide active agent sessions until explicitly reactivated.
 
 # Retrospective Procedure
 
