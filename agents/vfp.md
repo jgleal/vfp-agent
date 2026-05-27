@@ -361,35 +361,17 @@ When the user confirms they want to publish:
       - Block 3 (only if input came from a GitHub issue): bold text `Source` + plain text `: ` + linked text `GitHub Issue #N` (href = full issue URL)
       - Follow with one empty `paragraph` block for visual separation
 
-   b. **Section blocks** — use this layout for each section:
+   b. **Section blocks** — for every section, use a `heading_2` block with the exact section name from the methodology (e.g. `4.1 Request Summary`, `4.2 Intended Outcome`, etc.), followed immediately by the section content, followed by one empty `paragraph` block for visual separation.
 
-      **Sections rendered open** (always visible — most important for readers):
-      - §4.1 Request Summary
-      - §4.10 Proposed Agreement Boundary
-      - §4.17 Recommended Next Step
+      Content format per section:
+      - **Narrative sections** — `paragraph` blocks (with `rich_text` bold annotations for key terms where useful):
+        §4.1, §4.2, §4.3, §4.4, §4.10, §4.14, §4.17
+      - **List sections** — `bulleted_list_item` blocks, one per item (with `rich_text` bold annotations for classification labels):
+        §4.5, §4.6, §4.7, §4.8, §4.9, §4.11, §4.12, §4.13, §4.15, §4.16
 
-      For these: `heading_2` title (section name only, no `§4.N` prefix) followed by content as `paragraph` blocks. Use `rich_text` bold annotations for key terms, signal names, and anything that benefits from emphasis. Follow with one empty `paragraph` block.
+      Generate all 17 sections in order (§4.1 through §4.17). For §4.18 Validation Outcome: include the heading and a single `paragraph` block with the text `Pending — to be completed during retrospective (Phase 3+).`
 
-       **Sections rendered as `toggle` blocks** (collapsed by default — detail on demand):
-       - §4.2 Intended Outcome
-       - §4.3 Expected User Behaviour
-       - §4.4 Expected Value
-       - §4.5 Known Facts
-       - §4.6 Assumptions
-       - §4.7 Ambiguities & Undefined Areas
-       - §4.8 Scope Boundaries
-       - §4.9 Risk & Uncertainty Signals
-       - §4.11 Suggested Capability Slices
-       - §4.12 Validation Signals
-       - §4.13 Evidence Expectations
-       - §4.14 Prototype or Mock Validation
-       - §4.15 Delivery Handoff Notes
-       - §4.16 Questions for Stakeholders
-
-       For these: use a `toggle` block whose title is the section name (bold). Place the section content as children of the toggle:
-       - For §4.5, §4.6, §4.7, §4.8, §4.9, §4.11, §4.12, §4.13, §4.15, §4.16: children are `bulleted_list_item` blocks, one per item. Use `rich_text` bold annotations for classification labels (e.g. risk type names, assumption labels, scope category names, evidence type names).
-       - For §4.2, §4.3, §4.4, §4.14: children are `paragraph` blocks.
-       - Follow each toggle with one empty `paragraph` block.
+      **Do not use toggle blocks.** All sections are always visible.
 
 3. **Return the Notion page URL** to the user.
 
