@@ -9,8 +9,9 @@
 //   curl|bash:   delegated from install.sh → npx -y github:jgleal/vfp-agent -- [flags]
 //
 // Single source of truth: agents/vfp.md (opencode frontmatter format).
-// The installer parses the frontmatter, rewrites it per target tool, and
-// writes the result — the body is never duplicated.
+// Methodology skills: methodology/*.md (plain markdown). Frontmatter is generated
+// inline at install time — no duplication in the repo.
+// The installer parses/rewrites frontmatter per target tool at write time.
 
 'use strict';
 
@@ -25,16 +26,45 @@ const RAW_BASE      = `https://raw.githubusercontent.com/${REPO}/main`;
 const AGENT_SOURCE  = 'agents/vfp.md';
 const GH_API_BASE   = `https://api.github.com/repos/${REPO}`;
 
-// Methodology skill files — source paths in repo and their skill names.
+// Methodology skill files — source is methodology/*.md (canonical, no duplication).
+// Frontmatter is generated inline at install time; methodology files stay plain markdown.
+// vfp-retro-procedure intentionally omitted — deferred to Phase 3+.
 const SKILLS = [
-  { name: 'vfp-core-methodology',       src: 'methodology/skills/vfp-core-methodology/SKILL.md'       },
-  { name: 'vfp-guide',                  src: 'methodology/skills/vfp-guide/SKILL.md'                  },
-  { name: 'vfp-capability-slicing',     src: 'methodology/skills/vfp-capability-slicing/SKILL.md'     },
-  { name: 'vfp-risk-uncertainty',       src: 'methodology/skills/vfp-risk-uncertainty/SKILL.md'       },
-  { name: 'vfp-validation-evidence',    src: 'methodology/skills/vfp-validation-evidence/SKILL.md'    },
-  { name: 'vfp-retro-procedure',        src: 'methodology/skills/vfp-retro-procedure/SKILL.md'        },
-  { name: 'vfp-pilot-operational-model',src: 'methodology/skills/vfp-pilot-operational-model/SKILL.md'},
-  { name: 'vfp-example-library',        src: 'methodology/skills/vfp-example-library/SKILL.md'        },
+  {
+    name: 'vfp-core-methodology',
+    src:  'methodology/core-methodology.md',
+    description: 'Core delivery assumptions, primary reasoning priorities, functional flow, evidence collection, and methodology improvement principles',
+  },
+  {
+    name: 'vfp-guide',
+    src:  'methodology/vfp-guide.md',
+    description: 'Full 17-section VFP guide: purpose, section-by-section guidance, good/bad examples, lifecycle states, and common failure modes',
+  },
+  {
+    name: 'vfp-capability-slicing',
+    src:  'methodology/capability-slicing.md',
+    description: 'Capability slicing principles: behaviour-driven decomposition, validation-oriented slicing, anti-patterns, and evolution model. In the current phase, §4.11 slices are the direct source for GitHub sub-issues — each must be independently workable',
+  },
+  {
+    name: 'vfp-risk-uncertainty',
+    src:  'methodology/risk-uncertainty.md',
+    description: 'Risk and uncertainty classification: 8 signal types with detection patterns, examples, and recommended delivery responses',
+  },
+  {
+    name: 'vfp-validation-evidence',
+    src:  'methodology/validation-evidence-patterns.md',
+    description: 'Validation evidence patterns: evidence types, collection approaches, confidence levels, and quality signals for behavioural validation',
+  },
+  {
+    name: 'vfp-pilot-operational-model',
+    src:  'methodology/pilot-operational-model.md',
+    description: 'Pilot operational model: roles, ceremonies, cadence, escalation paths, and governance for the AI-native delivery framework',
+  },
+  {
+    name: 'vfp-example-library',
+    src:  'methodology/example-library.md',
+    description: 'Worked VFP examples and anti-patterns, populated through the operational learning loop',
+  },
 ];
 
 // Tools that natively support multi-file skills (agent + separate skill files).
@@ -392,14 +422,18 @@ function readSourceFile(repoRoot, forceRemote) {
 }
 
 // Read all skill files — returns array of { name, content }.
+// Reads methodology/*.md (plain markdown, no frontmatter) and generates the
+// skill frontmatter inline at install time. No duplication in the repo.
 function readSkillFiles(repoRoot, forceRemote) {
   return SKILLS.map(skill => {
-    let content;
+    let body;
     if (repoRoot && !forceRemote) {
-      content = fs.readFileSync(path.join(repoRoot, skill.src), 'utf8');
+      body = fs.readFileSync(path.join(repoRoot, skill.src), 'utf8');
     } else {
-      content = fetchRemoteFile(skill.src);
+      body = fetchRemoteFile(skill.src);
     }
+    // Generate frontmatter inline — methodology files are plain markdown
+    const content = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---\n\n${body}`;
     return { name: skill.name, content };
   });
 }
