@@ -1,5 +1,7 @@
 # Methodology Learnings Log
 
+> **Phase 3+ — Deferred.** This log is populated through the retrospective flow, which is not active in the current phase. The spec is preserved in [`retro-procedure.md`](./retro-procedure.md). Do not add entries here until the retro flow is explicitly reactivated.
+
 This file is the running record of operational insights extracted from VFP validation outcomes (§4.18). It sits between the individual packet record (stored in Notion) and a full methodology change (applied to the relevant `methodology/*.md` file).
 
 Entries here represent patterns observed in practice — not theory. The methodology is updated when a pattern is confirmed across multiple packets, not when it appears for the first time.

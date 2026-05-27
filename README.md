@@ -236,7 +236,7 @@ The [`/methodology`](methodology/) directory contains the canonical reference do
 - [`validation-evidence-patterns.md`](methodology/validation-evidence-patterns.md) — evidence collection patterns for behavioural validation
 - [`example-library.md`](methodology/example-library.md) — worked VFP examples (grows through operational learning)
 - [`retro-procedure.md`](methodology/retro-procedure.md) — **Phase 3+ spec** — step-by-step retrospective procedure: when to raise, what to update, how learnings feed back into the methodology
-- [`learnings.md`](methodology/learnings.md) — running log of confirmed patterns extracted from VFP validation outcomes
+- [`learnings.md`](methodology/learnings.md) — **Phase 3+ spec** — running log of confirmed patterns extracted from VFP validation outcomes; populated through the retrospective flow
 
 ---
 
