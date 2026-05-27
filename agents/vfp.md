@@ -113,15 +113,43 @@ Clarify what appears included, what appears excluded, what remains deferred, and
 
 Identify delivery intelligence signals using the uncertainty classification patterns below. This section exists for delivery awareness, not governance escalation.
 
-**Classify each risk signal using one of these patterns:**
-- **Semantic Underestimation** — request sounds smaller than its implied behavioural complexity
-- **Behavioural Ambiguity** — expected user behaviour is insufficiently defined
-- **Validation Uncertainty** — unclear how usefulness or success will be observed
-- **Scope Expansion Risk** — boundaries are insufficiently constrained
-- **Oversized Capability** — combines too many behavioural surfaces to validate effectively
-- **Dependency Complexity** — depends on external systems, teams, or undefined ownership
-- **Operational Uncertainty** — implies operational behaviour that has not been defined
-- **Exploratory Behaviour** — capability exists primarily to validate assumptions or reduce uncertainty
+The most dangerous risks are rarely architectural. They are: behavioural misunderstanding, semantic instability, hidden operational assumptions, and invisible workflow complexity. Classify each signal and state the recommended response.
+
+**Classification patterns:**
+
+- **Semantic Underestimation** — request sounds smaller than its implied behavioural complexity.
+  *Signals:* vague behavioural verbs, broad outcome language, implied orchestration, undefined operational ownership, hidden workflows.
+  *Example:* "Users should master the chapter." → hidden: tutoring behaviour, assessment logic, learning-state interpretation.
+  *Response:* expose hidden complexity, continue with bounded exploratory slices, prioritise behavioural validation.
+
+- **Behavioural Ambiguity** — expected user behaviour is insufficiently defined.
+  *Signals:* unclear workflows, vague user outcomes, contradictory expectations, multiple behavioural interpretations.
+  *Example:* "Better onboarding support." → guidance? automation? adaptive assistance? workflow coaching?
+  *Response:* preserve ambiguity explicitly, propose bounded assumptions, continue with exploratory slices.
+
+- **Validation Uncertainty** — unclear how usefulness or success will be observed.
+  *Signals:* no behavioural validation signals, implementation-only success criteria, missing observable outcomes.
+  *Example:* "Improve collaboration experience." → what behaviour changes? what signal indicates success?
+  *Response:* identify behavioural validation signals, define observable outcomes, propose lightweight validation approaches.
+
+- **Scope Expansion Risk** — boundaries are insufficiently constrained.
+  *Signals:* broad capability wording, undefined exclusions, implied future expansion, cross-team implications.
+  *Example:* "Complete learning assistant." → hidden: recommendations, analytics, assessments, teacher tooling.
+  *Response:* define behavioural boundaries explicitly, preserve deferred areas visibly, isolate independently valuable slices.
+
+- **Oversized Capability** — combines too many behavioural surfaces to validate effectively.
+  *Signals:* multi-workflow initiatives, broad platform concepts, undefined journeys, delayed validation opportunities.
+  *Response:* identify independently valuable behavioural increments, reduce orchestration complexity.
+
+- **Dependency Complexity** — depends on external systems, teams, or undefined ownership.
+  *Response:* expose dependency assumptions, avoid pretending independence exists, isolate uncertainty where possible.
+
+- **Operational Uncertainty** — implies operational behaviour that has not been defined.
+  *Signals:* moderation flows, support escalation, exception management, fallback workflows, administrative ownership.
+  *Response:* identify hidden operational assumptions, expose undefined workflows, avoid implementation-only framing.
+
+- **Exploratory Behaviour** — capability exists primarily to validate assumptions or reduce uncertainty. Exploratory progression is NOT delivery failure — it is structured learning.
+  *Response:* preserve exploratory intent explicitly, optimise for learning velocity, minimise unnecessary implementation investment.
 
 ---
 
@@ -165,17 +193,47 @@ List 2–5 slices, ordered by priority. Mark exploratory slices explicitly.
 
 ## 4.12 Validation Signals
 
-Define how expected behaviour could be observed. What would tell stakeholders the behaviour is working? What feedback signals matter?
+Define how expected behaviour could be observed. Focus on observable behaviour and usefulness — not implementation completion or passing technical checks.
 
-Focus on observable behaviour and usefulness, not implementation completion or passing technical checks.
+**Strong validation signals** (prefer these):
+- Students can explain how chapter concepts connect
+- Customers reserve a room without contacting reception
+- Users complete onboarding without support assistance
+- Stakeholders observe the expected behavioural improvement
+- Teams demonstrate operational workflow consistency
+
+**Weak validation signals** (avoid as primary evidence):
+- API responds correctly
+- Unit tests pass
+- Deployment succeeded
+- Database migration completed
+
+These may support implementation confidence but do not validate behavioural success.
+
+**Classify each signal by type:**
+- **Behavioural** — expected user behaviour became observable (workflow completion, task execution, reduced clarification dependency)
+- **Operational** — operational workflows behave reliably (exception handling, support stability, workflow continuity)
+- **Exploratory** — assumptions or hypotheses validated before broader implementation (prototypes, experiments, mockups)
+- **Adoption** — intended behaviour is consistently adopted (reduced support dependency, repeated usage, self-service increase)
+- **Alignment** — stakeholders agree expected behaviour and value became observable (walkthroughs, acceptance, outcome agreement)
+- **Assumption** — previously uncertain assumptions became evidence-supported
+
+**Common observable signals:** reduced clarification questions, improved completion rates, reduced support dependency, increased operational autonomy, successful workflow completion, reduced friction, stakeholder confirmation, repeated behavioural adoption.
 
 ---
 
 ## 4.13 Evidence Expectations
 
-Define what evidence should exist after validation or implementation. Examples: screenshots, recordings, demonstrations, analytics, stakeholder validation, user observation, prototype flows, workflow completion, operational behaviour.
+Define what evidence should exist after validation or implementation. Evidence should validate behaviour, usefulness, and alignment — not only technical correctness.
 
-Evidence should help validate behaviour, usefulness, and alignment — not only technical correctness.
+**Evidence types:**
+- **Demonstration** — demo flows, walkthroughs, behavioural simulations, stakeholder review sessions, guided operational flows
+- **Visual** — screenshots, recordings, Jam flows, annotated demonstrations, Storybook examples, interaction recordings
+- **Behavioural** — observable workflow completion, successful task execution, reduced support dependency, user interaction patterns
+- **Operational** — workflow consistency, support observations, exception handling behaviour, reduced manual intervention
+- **Quantitative** — analytics, completion rates, usage patterns, support reduction, observable adoption changes
+
+**Evidence confidence:** weak = assumptions without evidence, isolated demonstrations, anecdotal observations. Strong = repeated observable behaviour, stakeholder-confirmed workflow success, measurable behavioural change, reduced support dependency.
 
 ---
 
