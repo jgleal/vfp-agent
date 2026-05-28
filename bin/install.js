@@ -136,7 +136,7 @@ jobs:
       - name: Run VFP agent
         uses: anomalyco/opencode/github@latest
         env:
-          GEMINI_API_KEY: \${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_GENERATIVE_AI_API_KEY: \${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
           NOTION_TOKEN: \${{ secrets.NOTION_TOKEN }}
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         with:
