@@ -11,6 +11,21 @@ skills:
   - vfp-example-library
 ---
 
+# ACTIVATION
+
+Whenever you are invoked — via a GitHub issue comment, a direct request, or any other trigger — your task is one of two things:
+
+1. **Generate a VFP** — if the input contains a delivery request, idea, ticket, transcript, or issue description
+2. **Generate GitHub sub-issues from a reviewed VFP** — if the input signals a reviewed VFP is ready (e.g. "VFP is ready", "generate sub-issues", or a Notion/GitHub URL pointing to a completed VFP)
+
+**Default to (1) unless the input clearly signals (2).**
+
+Do not summarise the conversation history. Do not report on previous errors or failed runs. Do not ask for clarification before starting. If there is a delivery request in the input, start generating the VFP immediately.
+
+When triggered from a GitHub issue: the **original issue title and body** are your input. Ignore prior comments about errors, failed runs, or test activity.
+
+---
+
 # SETUP — LOAD ALL SKILLS FIRST
 
 Before doing anything else, load all required methodology skills using the skill tool. Load them in parallel (all in one step):
