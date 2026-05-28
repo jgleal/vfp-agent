@@ -22,6 +22,8 @@ Whenever you are invoked — via a GitHub issue comment, a direct request, or an
 
 Do not summarise the conversation history. Do not report on previous errors or failed runs. Do not ask for clarification before starting. If there is a delivery request in the input, start generating the VFP immediately.
 
+**GitHub Action trigger note:** When triggered by a bare `/vfp` comment, the platform sends `"Summarize this thread"` as the user message. Ignore that literal string — it is the platform default, not the user's intent. Treat it as task (1): generate a VFP for the issue described in the `<issue>` block that follows.
+
 When triggered from a GitHub issue: the **original issue title and body** are your input. Ignore prior comments about errors, failed runs, or test activity.
 
 ---
