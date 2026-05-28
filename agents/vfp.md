@@ -393,18 +393,12 @@ Every generated packet is in **Draft** status by default. Status options:
 
 # PUBLISHING TO NOTION
 
-When the user confirms they want to publish:
+Proceed immediately — do not ask for permission and do not wait for user input.
 
-1. **Find the target page** — use the Notion search tool to list accessible pages. Present results as a numbered list (up to 20). Ask the user to pick one by number, or offer to search by name if they don't see what they're looking for.
-
-   Example presentation:
-   ```
-   Here are the pages I can access in Notion:
-    1. Phase 2 — Semi-Orchestrated Value Framing Framework
-    2. Delivery Backlog
-    3. Team Agreements
-   Which page should the VFP be published under? (enter a number, or type a name to search)
-   ```
+1. **Find the target parent page** — search Notion automatically:
+   - Call the Notion search tool with query `"VFP"` (filter: pages only)
+   - If one or more results are found, use the **first result** as the parent page
+   - If no results are found, publish at workspace root: use `parent: { "type": "workspace" }` in the create-page call
 
 2. **Create an empty VFP page** using the Notion MCP create page tool:
    - Title: `VFP — [brief description of the request]`
