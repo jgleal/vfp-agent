@@ -94,13 +94,13 @@ jobs:
       - name: Check secrets
         uses: actions/github-script@v7
         env:
-          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_GENERATIVE_AI_API_KEY: \${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
           NOTION_TOKEN: \${{ secrets.NOTION_TOKEN }}
         with:
           script: |
-            const openai = process.env.OPENAI_API_KEY ? 'set' : 'MISSING';
+            const google = process.env.GOOGLE_GENERATIVE_AI_API_KEY ? 'set' : 'MISSING';
             const notion = process.env.NOTION_TOKEN ? 'set' : 'MISSING';
-            const ready = process.env.OPENAI_API_KEY && process.env.NOTION_TOKEN;
+            const ready = process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.NOTION_TOKEN;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -108,7 +108,7 @@ jobs:
               body: [
                 '## VFP Agent - secrets check',
                 '',
-                '- OPENAI_API_KEY: ' + openai,
+                '- GOOGLE_GENERATIVE_AI_API_KEY: ' + google,
                 '- NOTION_TOKEN: ' + notion,
                 '',
                 ready
@@ -145,6 +145,21 @@ jobs:
           mentions: "/vfp"
           use_github_token: "true"
 `;
+
+// opencode project-level config written by project-mode installs.
+// Uses {env:NOTION_TOKEN} substitution (supported by opencode config loader)
+// so the token comes from the NOTION_TOKEN secret at CI runtime — never hardcoded in the repo.
+const PROJECT_OPENCODE_CONFIG = JSON.stringify({
+  $schema: 'https://opencode.ai/config.json',
+  mcp: {
+    notion: {
+      type: 'local',
+      command: ['npx', '-y', '@notionhq/notion-mcp-server'],
+      environment: { NOTION_TOKEN: '{env:NOTION_TOKEN}' },
+      enabled: true,
+    },
+  },
+}, null, 2) + '\n';
 
 // ── Provider matrix ────────────────────────────────────────────────────────
 const PROVIDERS = [
@@ -802,17 +817,23 @@ async function installProvider(prov, ctx) {
     }
   }
 
-  // Write GitHub Actions workflow for project installs.
+  // Write GitHub Actions workflow and opencode config for project installs.
   if (id === 'project') {
     const wfDest = path.join(process.cwd(), '.github', 'workflows', 'vfp.yml');
     const wfResult = writeFile(wfDest, PROJECT_WORKFLOW, opts, opts.dryRun);
     if (wfResult === 'ok' && !opts.dryRun)       process.stdout.write(`  workflow: ${wfDest}\n`);
     else if (wfResult === 'skip')                  note('  workflow already exists — use --force to overwrite');
+
+    const cfgDest = path.join(process.cwd(), '.opencode', 'opencode.json');
+    const cfgResult = writeFile(cfgDest, PROJECT_OPENCODE_CONFIG, opts, opts.dryRun);
+    if (cfgResult === 'ok' && !opts.dryRun)       process.stdout.write(`  config: ${cfgDest}\n`);
+    else if (cfgResult === 'skip')                 note('  opencode.json already exists — use --force to overwrite');
+
     if (!opts.dryRun) {
       process.stdout.write('\n');
       note('  Next: add these secrets in repo Settings → Secrets → Actions:');
-      note('    OPENAI_API_KEY   your OpenAI API key');
-      note('    NOTION_TOKEN     your Notion integration token');
+      note('    GOOGLE_GENERATIVE_AI_API_KEY   your Google AI Studio API key (free at aistudio.google.com)');
+      note('    NOTION_TOKEN                   your Notion integration token');
       note('  Then comment /vfp-check on any issue to verify.');
     }
   }
