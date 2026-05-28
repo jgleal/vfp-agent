@@ -142,6 +142,7 @@ jobs:
         with:
           model: google/gemini-2.5-flash
           agent: vfp
+          share: "false"
           mentions: "/vfp"
           use_github_token: "true"
 `;
