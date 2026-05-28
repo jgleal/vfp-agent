@@ -69,11 +69,82 @@ const SKILLS = [
 
 // Tools that natively support multi-file skills (agent + separate skill files).
 // All others receive a single merged file.
-const SKILLS_NATIVE = new Set(['opencode', 'claude']);
+const SKILLS_NATIVE = new Set(['opencode', 'claude', 'project']);
 
 // Marker fences for append-style installs (Windsurf).
 const BLOCK_BEGIN = '<!-- vfp-agent-begin -->';
 const BLOCK_END   = '<!-- vfp-agent-end -->';
+
+// GitHub Actions workflow written by project-mode installs.
+// Triggered by /vfp comments on issues; /vfp-check verifies secrets without running a full VFP.
+const PROJECT_WORKFLOW = `name: vfp-agent
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  # /vfp-check: verify secrets are configured and post a comment
+  check:
+    if: startsWith(github.event.comment.body, '/vfp-check')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Check secrets
+        uses: actions/github-script@v7
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          NOTION_TOKEN: \${{ secrets.NOTION_TOKEN }}
+        with:
+          script: |
+            const openai = process.env.OPENAI_API_KEY ? 'set' : 'MISSING';
+            const notion = process.env.NOTION_TOKEN ? 'set' : 'MISSING';
+            const ready = process.env.OPENAI_API_KEY && process.env.NOTION_TOKEN;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                '## VFP Agent - secrets check',
+                '',
+                '- OPENAI_API_KEY: ' + openai,
+                '- NOTION_TOKEN: ' + notion,
+                '',
+                ready
+                  ? 'Ready. Comment /vfp <description> on any issue to generate a VFP.'
+                  : 'Not ready. Add the missing secrets in repo Settings > Secrets > Actions.'
+              ].join('\\n')
+            });
+
+  # /vfp: generate a VFP for the issue using the specialised agent
+  vfp:
+    if: |
+      startsWith(github.event.comment.body, '/vfp') &&
+      !startsWith(github.event.comment.body, '/vfp-check')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run VFP agent
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          NOTION_TOKEN: \${{ secrets.NOTION_TOKEN }}
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: openai/gpt-4o
+          agent: vfp
+          mentions: "/vfp"
+          use_github_token: "true"
+`;
 
 // ── Provider matrix ────────────────────────────────────────────────────────
 const PROVIDERS = [
@@ -84,6 +155,7 @@ const PROVIDERS = [
   { id: 'codex',    label: 'OpenAI Codex CLI',  detect: 'command:codex',                            supportsAgents: true  },
   { id: 'vscode',   label: 'VS Code (Copilot)', detect: 'dir:~/.vscode||macapp:Visual Studio Code', supportsAgents: true  },
   { id: 'windsurf', label: 'Windsurf',          detect: 'command:windsurf||macapp:Windsurf',        supportsAgents: false },
+  { id: 'project',  label: 'GitHub Actions (this repo)', detect: 'file:.git',                        supportsAgents: true  },
 ];
 
 // ── Config/destination paths per provider ─────────────────────────────────
@@ -113,12 +185,14 @@ const AGENT_DEST = {
   codex:    () => path.join(os.homedir(), '.codex', 'agents', 'vfp.md'),
   vscode:   () => path.join(os.homedir(), '.copilot', 'agents', 'vfp.agent.md'),
   windsurf: () => path.join(os.homedir(), '.codeium', 'windsurf', 'memories', 'global_rules.md'),
+  project:  () => path.join(process.cwd(), '.opencode', 'agents', 'vfp.md'),
 };
 
 // Skills destination root per provider (only for SKILLS_NATIVE tools).
 const SKILLS_DEST = {
   opencode: () => path.join(opencodeConfigDir(), 'skills'),
   claude:   () => path.join(os.homedir(), '.claude', 'skills'),
+  project:  () => path.join(process.cwd(), '.opencode', 'skills'),
 };
 
 // ── Frontmatter transform ──────────────────────────────────────────────────
@@ -144,6 +218,7 @@ function transformContent(source, toolId) {
   const desc = fields.description || '';
 
   switch (toolId) {
+    case 'project':
     case 'opencode':
       // Source format — pass through unchanged.
       return source;
@@ -617,7 +692,9 @@ async function interactiveSelect(detected, all, c, opts) {
 
       const check = isSel ? c.green('[✓]') : c.dim('[ ]');
       const label = isDetected ? c.bold(p.label) : p.label;
-      const badge = isDetected ? c.dim(' detected') : c.dim(' (not detected)');
+      const badge = p.id === 'project'
+        ? c.dim(` (./${path.basename(process.cwd())})`)
+        : (isDetected ? c.dim(' detected') : c.dim(' (not detected)'));
       const arrow = cursor === i ? '>' : ' ';
 
       out.push(`  ${arrow} ${check} ${label}${badge}`);
@@ -714,7 +791,7 @@ async function installProvider(prov, ctx) {
     results.skipped.push(id);
   }
 
-  // Write skill files for native-skills clients (opencode, claude).
+  // Write skill files for native-skills clients (opencode, claude, project).
   if (SKILLS_NATIVE.has(id) && SKILLS_DEST[id]) {
     const skillsRoot = SKILLS_DEST[id]();
     for (const { name, content: skillContent } of skillFiles) {
@@ -722,6 +799,21 @@ async function installProvider(prov, ctx) {
       const skillResult = writeFile(skillDest, skillContent, opts, opts.dryRun);
       if (skillResult === 'ok' && !opts.dryRun)
         process.stdout.write(`  skill: ${skillDest}\n`);
+    }
+  }
+
+  // Write GitHub Actions workflow for project installs.
+  if (id === 'project') {
+    const wfDest = path.join(process.cwd(), '.github', 'workflows', 'vfp.yml');
+    const wfResult = writeFile(wfDest, PROJECT_WORKFLOW, opts, opts.dryRun);
+    if (wfResult === 'ok' && !opts.dryRun)       process.stdout.write(`  workflow: ${wfDest}\n`);
+    else if (wfResult === 'skip')                  note('  workflow already exists — use --force to overwrite');
+    if (!opts.dryRun) {
+      process.stdout.write('\n');
+      note('  Next: add these secrets in repo Settings → Secrets → Actions:');
+      note('    OPENAI_API_KEY   your OpenAI API key');
+      note('    NOTION_TOKEN     your Notion integration token');
+      note('  Then comment /vfp-check on any issue to verify.');
     }
   }
 
