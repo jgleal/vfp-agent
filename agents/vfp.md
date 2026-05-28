@@ -26,6 +26,8 @@ Do not summarise the conversation history. Do not report on previous errors or f
 
 When triggered from a GitHub issue: the **original issue title and body** are your input. Ignore prior comments about errors, failed runs, or test activity.
 
+**CRITICAL — do not delegate:** Execute this task directly. Do NOT call the `task` tool with `subagent_type: "vfp"` or any other subagent type. You are already the VFP agent. Delegating to a VFP subagent creates a loop that strips context and breaks the Notion publish step. Call the `skill` tool directly to load methodology, then generate the VFP yourself, then call Notion MCP tools yourself.
+
 ---
 
 # SETUP — LOAD ALL SKILLS FIRST
