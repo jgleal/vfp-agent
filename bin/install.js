@@ -76,11 +76,14 @@ const BLOCK_BEGIN = '<!-- vfp-agent-begin -->';
 const BLOCK_END   = '<!-- vfp-agent-end -->';
 
 // GitHub Actions workflow written by project-mode installs.
-// Triggered by /vfp comments on issues; /vfp-check verifies secrets without running a full VFP.
-const PROJECT_WORKFLOW = `name: vfp-agent
+// Single workflow handling all opencode commands (/vfp-check, /vfp, /oc).
+// One workflow file means one Actions run per comment instead of two (less noise).
+const PROJECT_WORKFLOW = `name: opencode
 
 on:
   issue_comment:
+    types: [created]
+  pull_request_review_comment:
     types: [created]
 
 jobs:
@@ -112,7 +115,7 @@ jobs:
                 '- NOTION_TOKEN: ' + notion,
                 '',
                 ready
-                  ? 'Ready. Comment /vfp <description> on any issue to generate a VFP.'
+                  ? 'Ready. Comment /vfp on any issue to generate a VFP.'
                   : 'Not ready. Add the missing secrets in repo Settings > Secrets > Actions.'
               ].join('\\n')
             });
@@ -144,6 +147,35 @@ jobs:
           agent: vfp
           share: "false"
           mentions: "/vfp"
+          use_github_token: "true"
+
+  # /oc or /opencode: general-purpose opencode agent
+  opencode:
+    if: |
+      contains(github.event.comment.body, ' /oc') ||
+      startsWith(github.event.comment.body, '/oc') ||
+      contains(github.event.comment.body, ' /opencode') ||
+      startsWith(github.event.comment.body, '/opencode')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run opencode
+        uses: anomalyco/opencode/github@latest
+        env:
+          GOOGLE_GENERATIVE_AI_API_KEY: \${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+          NOTION_TOKEN: \${{ secrets.NOTION_TOKEN }}
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: google/gemini-2.5-flash
+          share: "false"
           use_github_token: "true"
 `;
 
