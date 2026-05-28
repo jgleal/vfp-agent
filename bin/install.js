@@ -150,6 +150,92 @@ jobs:
           use_github_token: "true"
           prompt: "Generate a Value Framing Packet (VFP) for the delivery request described in this issue. Follow the VFP agent instructions."
 
+      - name: Publish VFP to Notion
+        uses: actions/github-script@v7
+        env:
+          NOTION_TOKEN: \${{ secrets.NOTION_TOKEN }}
+          NOTION_PARENT_PAGE_ID: \${{ vars.NOTION_PARENT_PAGE_ID }}
+        with:
+          script: |
+            const fs = require('fs')
+            const path = require('path')
+
+            const vfpPath = path.join(process.env.GITHUB_WORKSPACE, 'vfp_output.md')
+            if (!fs.existsSync(vfpPath)) {
+              core.warning('vfp_output.md not found — Notion publish skipped')
+              return
+            }
+            const vfpContent = fs.readFileSync(vfpPath, 'utf8')
+
+            const token = process.env.NOTION_TOKEN
+            if (!token) {
+              core.warning('NOTION_TOKEN not set — Notion publish skipped')
+              return
+            }
+
+            const issueTitle = context.payload.issue.title
+            const pageTitle = \`VFP: \${issueTitle}\`
+            const headers = {
+              'Authorization': \`Bearer \${token}\`,
+              'Notion-Version': '2026-03-11',
+              'Content-Type': 'application/json'
+            }
+
+            // Resolve parent page
+            let parentId = process.env.NOTION_PARENT_PAGE_ID
+            if (!parentId) {
+              const searchRes = await fetch('https://api.notion.com/v1/search', {
+                method: 'POST', headers,
+                body: JSON.stringify({ query: 'VFPs', filter: { property: 'object', value: 'page' } })
+              })
+              const searchData = await searchRes.json()
+              if (searchData.results && searchData.results.length > 0) {
+                parentId = searchData.results[0].id
+              } else {
+                core.warning('No VFPs parent page found in Notion and NOTION_PARENT_PAGE_ID not set — Notion publish skipped')
+                return
+              }
+            }
+
+            // Create page
+            const createRes = await fetch('https://api.notion.com/v1/pages', {
+              method: 'POST', headers,
+              body: JSON.stringify({
+                parent: { page_id: parentId },
+                properties: { title: [{ type: 'text', text: { content: pageTitle } }] }
+              })
+            })
+            const page = await createRes.json()
+            if (!page.id) {
+              core.error(\`Notion page creation failed: \${JSON.stringify(page)}\`)
+              return
+            }
+
+            // Write markdown content
+            await fetch(\`https://api.notion.com/v1/pages/\${page.id}/markdown\`, {
+              method: 'PATCH', headers,
+              body: JSON.stringify({ replace_content: vfpContent })
+            })
+
+            const notionUrl = page.url || \`https://www.notion.so/\${page.id.replace(/-/g, '')}\`
+            core.setOutput('notion_url', notionUrl)
+            core.info(\`Published to Notion: \${notionUrl}\`)
+
+            // Post comment on issue
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                '## VFP Published',
+                '',
+                \`📄 [View in Notion](\${notionUrl})\`,
+                '',
+                '---',
+                'Status: **Draft** — review and correct in Notion, then comment \`/vfp-issues\` to generate GitHub sub-issues.'
+              ].join('\\n')
+            })
+
   # /oc or /opencode: general-purpose opencode agent
   opencode:
     if: |
