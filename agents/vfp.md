@@ -106,10 +106,10 @@ When given a raw input, follow this process:
 1. **Read and interpret** — do not simply paraphrase. Interpret the behavioural intent behind the request.
 2. **Detect signals** — identify semantic underestimation, behavioural ambiguity, scope expansion risk, oversized capability framing, or validation uncertainty before you start writing.
 3. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number before generating. You will need these after publishing.
-4. **Generate all 17 sections** in order. Each section has a specific purpose — do not skip any.
+4. **Generate all 17 sections** in order (see THE 17-SECTION VFP TEMPLATE below). Do not skip any.
 5. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
-6. **Ask if you need clarification** — if critical information is missing to generate a useful packet, ask 1–3 targeted questions before generating. Do not ask unnecessary questions.
-7. **After generating**, proceed directly to publishing the VFP to Notion — this is a required step, not optional. Do not ask for permission to publish. If the user cannot publish at this moment, provide the full packet text to save locally and say: "This packet is in Draft state and incomplete. Resume by sharing it here when you're ready to publish."
+6. **Do NOT output the VFP as a standalone text response.** Instead, hold the generated content in memory and immediately call the Notion publish tools (step 7). The first tool call should be `notion_API-post-search`. Do not pause between generation and publishing.
+7. **Publish to Notion immediately** — follow the PUBLISHING TO NOTION steps below. Do not ask for permission. Do not ask the user to confirm. Execute all steps in sequence using tool calls.
 
 ---
 
