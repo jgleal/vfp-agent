@@ -108,8 +108,8 @@ When given a raw input, follow this process:
 3. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number before generating. You will need these after publishing.
 4. **Generate all 17 sections** in order (see THE 17-SECTION VFP TEMPLATE below). Do not skip any.
 5. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
-6. **Write the VFP to a file immediately.** Use the bash tool to write the complete VFP markdown to `${GITHUB_WORKSPACE:-/tmp}/vfp_output.md` (see PUBLISHING section below). Do not pause. The workflow step that runs after the agent handles Notion publishing automatically.
-7. **Output a brief summary** — after writing the file, output 2–3 sentences summarising the behavioural intent and the main risk signal. Do not reproduce the full VFP text.
+6. **Publish to Notion immediately** — call the Notion MCP tools in sequence (see PUBLISHING section below). Do not output the VFP as a standalone text block before publishing — publish first, then post the summary comment.
+7. **Post the summary GitHub comment** with the Notion URL.
 
 ---
 
@@ -395,33 +395,47 @@ Every generated packet is in **Draft** status by default. Status options:
 
 # PUBLISHING YOUR VFP
 
-Write the complete VFP markdown to a file using the bash tool. The workflow step that follows the agent step handles Notion publishing automatically — you do not need to call any Notion or `gh` tools.
+Use Notion MCP tools directly. No Python, no bash scripts.
 
-**Write the file:**
+**Step 1 — Find the parent page**
+
+Call `notion_API-post-search` with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}`. Use the first result's `id` as `parent_page_id`.
+
+**Step 2 — Create the page**
+
+Call `notion_API-post-page` with:
+- `parent`: `{"page_id": "<parent_page_id>"}`
+- `properties`: title set to `"VFP — <brief description of the request>"`
+
+Note the returned `id` (`page_id`) and `url` (`page_url`).
+
+**Step 3 — Add the VFP content**
+
+Call `notion_API-patch-block-children` with the full VFP as an array of `paragraph` and `bulleted_list_item` blocks. Section titles (§4.1, §4.2, etc.) become bold paragraphs. Use multiple calls if needed (max 100 blocks per request).
+
+**Step 4 — Post the GitHub comment**
 
 ```bash
-cat > "${GITHUB_WORKSPACE:-/tmp}/vfp_output.md" << 'ENDVFP'
-**Status**: Draft
-**Date**: [ISO date]
-**Source**: [GitHub Issue #N](https://github.com/owner/repo/issues/N)
+gh issue comment <number> --repo <owner/repo> --body "$(cat << 'EOF'
+## VFP Published
 
-### 4.1 Request Summary
+[1–2 sentences from §4.1 — reframe the behavioural intent, surface the non-obvious complexity]
 
-[prose]
+**Main risk signals**
+- **[Classification]**: [one sentence from §4.9]
+- **[Classification]**: [one sentence]
 
-### 4.2 Intended Outcome
+**Recommended next step**
+[1–2 sentences from §4.17]
 
-[prose]
+---
 
-... (all 17 sections)
-ENDVFP
+📄 Full Value Framing Packet: <page_url>
+EOF
+)"
 ```
 
-Replace the template above with the actual generated VFP content. Every `###` heading and all section content must be included verbatim.
-
-If `GITHUB_WORKSPACE` is not set (local session), the file is written to `/tmp/vfp_output.md`.
-
-**Do not call `notion_API-*` tools, do not run Python Notion scripts, do not call `gh issue comment`.** The workflow handles all of that after this step completes.
+**If Notion MCP tools fail**: post the full VFP text as a GitHub comment and state it is in Draft state pending Notion publish.
 
 ---
 
