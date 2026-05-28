@@ -1,6 +1,6 @@
 ---
 description: Value Framing Packet generator and GitHub sub-issue breakdown tool. Use for "generate a VFP", "frame this request", "create a value framing packet", "help me structure this delivery", "VFP is ready, generate sub-issues", or "create GitHub issues from this VFP".
-mode: all
+mode: primary
 skills:
   - vfp-core-methodology
   - vfp-guide
