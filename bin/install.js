@@ -148,6 +148,7 @@ jobs:
           share: "false"
           mentions: "/vfp"
           use_github_token: "true"
+          prompt: "Generate a Value Framing Packet (VFP) for the delivery request described in this issue. Follow the VFP agent instructions."
 
   # /oc or /opencode: general-purpose opencode agent
   opencode:
