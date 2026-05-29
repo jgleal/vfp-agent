@@ -448,7 +448,7 @@ After the metadata, append the 17 VFP sections using these rules:
 - **Prose content** (§4.1, §4.2, §4.4, §4.10, §4.14, §4.15, §4.17): one or more `paragraph` blocks
 - **List content** (§4.3, §4.5, §4.6, §4.7, §4.8, §4.9, §4.11, §4.12, §4.13, §4.16): one `bulleted_list_item` block per item — do NOT dump multi-line text into a single paragraph
 - **Empty paragraph** between sections: `{ "type": "paragraph", "paragraph": { "rich_text": [] } }`
-- Max 100 blocks per `notion_API-patch-block-children` call — use multiple calls if needed
+- **Send ALL blocks in a single `notion_API-patch-block-children` call.** A complete 17-section VFP with metadata is well under the 100-block limit. Never split into multiple calls — one call, all blocks.
 
 **Step 3 — Post the GitHub comment**
 
