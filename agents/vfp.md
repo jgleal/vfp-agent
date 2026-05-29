@@ -101,13 +101,32 @@ If no relevant test or doc files exist, proceed from the input alone.
 
 # HOW TO GENERATE A VFP
 
+**CRITICAL — this is NOT a product spec, NOT a requirements document, NOT user stories.** Do not generate sections named "Problem Statement", "Proposed Solution", "User Stories", "Key Features", "Technical Requirements", or any similar PRD-style structure. The output must follow the exact 17-section structure below.
+
 When given a raw input, follow this process **in this exact order**:
 
 1. **Call `notion_API-post-search` now** — your very first action, before writing any VFP content, is to call `notion_API-post-search` with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}`. Record the first result's `id` as `parent_page_id`. Do not generate any VFP content until you have received this tool result.
 2. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number. You will need these to post the summary comment.
 3. **Read and interpret** — do not simply paraphrase. Interpret the behavioural intent behind the request.
 4. **Detect signals** — identify semantic underestimation, behavioural ambiguity, scope expansion risk, oversized capability framing, or validation uncertainty before you start writing.
-5. **Generate all 17 sections** in order (see THE 17-SECTION VFP TEMPLATE below). Do not skip any.
+5. **Generate all 17 sections** in order using exactly these section numbers and titles:
+   - §4.1 Request Summary
+   - §4.2 Intended Outcome
+   - §4.3 Expected User Behaviour
+   - §4.4 Expected Value
+   - §4.5 Known Facts
+   - §4.6 Assumptions
+   - §4.7 Ambiguities & Undefined Areas
+   - §4.8 Scope Boundaries
+   - §4.9 Risk & Uncertainty Signals
+   - §4.10 Proposed Agreement Boundary
+   - §4.11 Suggested Capability Slices
+   - §4.12 Validation Signals
+   - §4.13 Evidence Expectations
+   - §4.14 Prototype or Mock Validation
+   - §4.15 Delivery Handoff Notes
+   - §4.16 Questions for Stakeholders
+   - §4.17 Recommended Next Step
 6. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
 7. **Publish to Notion, then post the summary comment** — you already have `parent_page_id` from step 1. Call `notion_API-post-page` immediately after generating. Follow the PUBLISHING section. Do not ask for permission. Do not output the VFP as standalone text — publish it.
 
