@@ -101,15 +101,15 @@ If no relevant test or doc files exist, proceed from the input alone.
 
 # HOW TO GENERATE A VFP
 
-When given a raw input, follow this process:
+When given a raw input, follow this process **in this exact order**:
 
-1. **Read and interpret** — do not simply paraphrase. Interpret the behavioural intent behind the request.
-2. **Detect signals** — identify semantic underestimation, behavioural ambiguity, scope expansion risk, oversized capability framing, or validation uncertainty before you start writing.
-3. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number before generating. You will need these after publishing.
-4. **Generate all 17 sections** in order (see THE 17-SECTION VFP TEMPLATE below). Do not skip any.
-5. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
-6. **Do NOT output the VFP as a standalone text response.** Hold the generated content in memory and immediately call the Notion MCP tools (step 7). The first tool call must be `notion_API-post-search`. Do not pause between generation and publishing.
-7. **Publish to Notion, then post the summary comment** — follow the PUBLISHING section below. Do not ask for permission. Execute all steps in sequence.
+1. **Call `notion_API-post-search` now** — your very first action, before writing any VFP content, is to call `notion_API-post-search` with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}`. Record the first result's `id` as `parent_page_id`. Do not generate any VFP content until you have received this tool result.
+2. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number. You will need these to post the summary comment.
+3. **Read and interpret** — do not simply paraphrase. Interpret the behavioural intent behind the request.
+4. **Detect signals** — identify semantic underestimation, behavioural ambiguity, scope expansion risk, oversized capability framing, or validation uncertainty before you start writing.
+5. **Generate all 17 sections** in order (see THE 17-SECTION VFP TEMPLATE below). Do not skip any.
+6. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
+7. **Publish to Notion, then post the summary comment** — you already have `parent_page_id` from step 1. Call `notion_API-post-page` immediately after generating. Follow the PUBLISHING section. Do not ask for permission. Do not output the VFP as standalone text — publish it.
 
 ---
 
@@ -397,11 +397,9 @@ Every generated packet is in **Draft** status by default. Status options:
 
 Use Notion MCP tools directly. No Python, no bash scripts.
 
-**Step 1 — Find the parent page**
+You already have `parent_page_id` from step 1 of HOW TO GENERATE A VFP. If for any reason you do not have it yet, call `notion_API-post-search` with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}` and record the first result's `id`.
 
-Call `notion_API-post-search` with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}`. Use the first result's `id` as `parent_page_id`.
-
-**Step 2 — Create the page**
+**Step 1 — Create the page**
 
 Call `notion_API-post-page` with:
 - `parent`: `{"page_id": "<parent_page_id>"}`
@@ -409,11 +407,11 @@ Call `notion_API-post-page` with:
 
 Note the returned `id` (`page_id`) and `url` (`page_url`).
 
-**Step 3 — Add the VFP content**
+**Step 2 — Add the VFP content**
 
 Call `notion_API-patch-block-children` with the full VFP as an array of `paragraph` and `bulleted_list_item` blocks. Section titles (§4.1, §4.2, etc.) become bold paragraphs. Use multiple calls if needed (max 100 blocks per request).
 
-**Step 4 — Post the GitHub comment**
+**Step 3 — Post the GitHub comment**
 
 ```bash
 gh issue comment <number> --repo <owner/repo> --body "$(cat << 'EOF'
