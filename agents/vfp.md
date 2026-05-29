@@ -409,29 +409,51 @@ Note the returned `id` (`page_id`) and `url` (`page_url`).
 
 **Step 2 — Add the VFP content**
 
-Call `notion_API-patch-block-children` with the full VFP as an array of `paragraph` and `bulleted_list_item` blocks. Section titles (§4.1, §4.2, etc.) become bold paragraphs. Use multiple calls if needed (max 100 blocks per request).
+Call `notion_API-patch-block-children`. The block array must start with these three metadata paragraph blocks, then an empty paragraph, then the VFP sections:
+
+```
+{ "type": "paragraph", "paragraph": { "rich_text": [{ "type": "text", "text": { "content": "Status: Draft" } }] } },
+{ "type": "paragraph", "paragraph": { "rich_text": [{ "type": "text", "text": { "content": "Date: <YYYY-MM-DD today>" } }] } },
+{ "type": "paragraph", "paragraph": { "rich_text": [
+    { "type": "text", "text": { "content": "Source: " } },
+    { "type": "text", "text": { "content": "GitHub Issue #<n> — <owner/repo>", "link": { "url": "https://github.com/<owner/repo>/issues/<n>" } } }
+] } },
+{ "type": "paragraph", "paragraph": { "rich_text": [] } }
+```
+
+If not triggered from a GitHub issue, omit the Source line.
+
+After the metadata, append the 17 VFP sections using these rules:
+
+- **Section title**: plain `paragraph` block with text `"4.1 Request Summary"`, `"4.2 Intended Outcome"`, etc. (use `§4.x` numbering, not `1.`, `2.`)
+- **Prose content** (§4.1, §4.2, §4.4, §4.10, §4.14, §4.15, §4.17): one or more `paragraph` blocks
+- **List content** (§4.3, §4.5, §4.6, §4.7, §4.8, §4.9, §4.11, §4.12, §4.13, §4.16): one `bulleted_list_item` block per item — do NOT dump multi-line text into a single paragraph
+- **Empty paragraph** between sections: `{ "type": "paragraph", "paragraph": { "rich_text": [] } }`
+- Max 100 blocks per `notion_API-patch-block-children` call — use multiple calls if needed
 
 **Step 3 — Post the GitHub comment**
 
-```bash
-gh issue comment <number> --repo <owner/repo> --body "$(cat << 'EOF'
-## VFP Published
+Use this exact structure. Do not paraphrase it or turn it into prose:
 
-[1–2 sentences from §4.1 — reframe the behavioural intent, surface the non-obvious complexity]
+```bash
+gh issue comment <number> --repo <owner/repo> --body "## VFP Published
+
+<2–3 sentences from §4.1: reframe the behavioural intent, surface the non-obvious complexity that was not visible in the original request>
 
 **Main risk signals**
-- **[Classification]**: [one sentence from §4.9]
-- **[Classification]**: [one sentence]
+- **<Signal type from §4.9>**: <one sentence>
+- **<Signal type from §4.9>**: <one sentence>
+- **<Signal type from §4.9>**: <one sentence>
 
 **Recommended next step**
-[1–2 sentences from §4.17]
+<1–2 sentences from §4.17>
 
 ---
 
-📄 Full Value Framing Packet: <page_url>
-EOF
-)"
+📄 Full Value Framing Packet: <page_url>"
 ```
+
+List all significant risk signals from §4.9 — typically 3–5. Do not summarise them into one. Each bullet must name the classification and give one concrete sentence.
 
 **If Notion MCP tools fail**: post the full VFP text as a GitHub comment and state it is in Draft state pending Notion publish.
 
