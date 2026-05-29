@@ -108,8 +108,8 @@ When given a raw input, follow this process:
 3. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number before generating. You will need these after publishing.
 4. **Generate all 17 sections** in order (see THE 17-SECTION VFP TEMPLATE below). Do not skip any.
 5. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
-6. **Publish to Notion immediately** — call the Notion MCP tools in sequence (see PUBLISHING section below). Do not output the VFP as a standalone text block before publishing — publish first, then post the summary comment.
-7. **Post the summary GitHub comment** with the Notion URL.
+6. **Do NOT output the VFP as a standalone text response.** Hold the generated content in memory and immediately call the Notion MCP tools (step 7). The first tool call must be `notion_API-post-search`. Do not pause between generation and publishing.
+7. **Publish to Notion, then post the summary comment** — follow the PUBLISHING section below. Do not ask for permission. Execute all steps in sequence.
 
 ---
 
