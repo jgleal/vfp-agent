@@ -181,18 +181,9 @@ jobs:
 `;
 
 // opencode project-level config written by project-mode installs.
-// Uses {env:NOTION_TOKEN} substitution (supported by opencode config loader)
-// so the token comes from the NOTION_TOKEN secret at CI runtime — never hardcoded in the repo.
+// No Notion MCP needed — the VFP agent publishes via Python3 direct API using NOTION_TOKEN.
 const PROJECT_OPENCODE_CONFIG = JSON.stringify({
   $schema: 'https://opencode.ai/config.json',
-  mcp: {
-    notion: {
-      type: 'local',
-      command: ['npx', '-y', '@notionhq/notion-mcp-server'],
-      environment: { NOTION_TOKEN: '{env:NOTION_TOKEN}' },
-      enabled: true,
-    },
-  },
 }, null, 2) + '\n';
 
 // ── Provider matrix ────────────────────────────────────────────────────────
@@ -903,19 +894,36 @@ async function installProvider(prov, ctx) {
     }
   }
 
-  // Notion MCP prerequisite
+  // Notion MCP + token setup
   if (NOTION_MCP_CONFIGS[id] && fileResult !== 'skip') {
+    // Remote MCP — for general Notion access in the tool (search, browse, etc.)
     if (notionMcpConfigured(id)) {
       note('  Notion MCP already configured');
+    } else if (!opts.dryRun) {
+      installNotionMcp(id, false);
+      process.stdout.write(`  Notion MCP configured (remote — ${NOTION_REMOTE_URL})\n`);
+      process.stdout.write('  OAuth: browser prompt on first use\n');
     } else {
-      if (!opts.dryRun) {
-        installNotionMcp(id, false);
+      installNotionMcp(id, true);
+    }
+
+    // NOTION_TOKEN — required for VFP publishing via Python3 direct API
+    if (!opts.dryRun && !opts.nonInteractive) {
+      let token = sharedNotionToken.value;
+      if (!token) {
         process.stdout.write('\n');
-        process.stdout.write('  Notion MCP configured (remote — https://mcp.notion.com/mcp)\n');
-        process.stdout.write('  Authentication: OAuth via browser on first use.\n');
-        process.stdout.write('  For CI/headless use, set NOTION_TOKEN in your environment.\n');
+        process.stdout.write('  NOTION_TOKEN is required for VFP publishing.\n');
+        process.stdout.write('  Get one at https://www.notion.so/developers/tokens\n');
+        process.stdout.write('  (New personal access token → Notion API capability → copy)\n');
+        process.stdout.write('\n');
+        token = await prompt('  Paste token (or press Enter to skip): ');
+        if (token) sharedNotionToken.value = token;
+      }
+      if (token) {
+        writeTokenToShellProfile('NOTION_TOKEN', token);
       } else {
-        installNotionMcp(id, true);
+        note('  Skipped. Set NOTION_TOKEN manually before using the VFP agent:');
+        note('    export NOTION_TOKEN="ntn_..."');
       }
     }
   }

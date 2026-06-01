@@ -96,7 +96,7 @@ This loop is the mechanism by which real-world delivery experience improves the 
 
 ### Why Notion publish is required
 
-Publishing to Notion is not a convenience feature. It is the step that makes a packet accessible to the team and anchors it in the delivery record. A packet that exists only in a chat session has no continuity. If Notion MCP is unavailable, the packet must stay in explicit Draft/incomplete state with a clear resume path — not silently skipped.
+Publishing to Notion is not a convenience feature. It is the step that makes a packet accessible to the team and anchors it in the delivery record. A packet that exists only in a chat session has no continuity. If the Python3 publish script fails (e.g. `NOTION_TOKEN` not set, network error), the packet must stay in explicit Draft/incomplete state with a clear resume path — not silently skipped.
 
 ---
 
@@ -152,27 +152,22 @@ When running in a directory with a repo, the agent uses the codebase as context 
 **`methodology/learnings.md` is not runtime context**
 It is source material for doc evolution. The agent writes to it directly using file tools. It is not injected into agent sessions.
 
-**Notion MCP — remote vs local**
+**Notion publish — Python3 direct API (single path)**
 
-Notion maintains two Notion MCP implementations:
-- **Remote hosted MCP** (`https://mcp.notion.com/mcp`) — OAuth-based, markdown-native tools (`notion-search`, `notion-create-pages`, `notion-update-page`, etc.), actively maintained. **Cannot be used headlessly** (OAuth requires human browser interaction).
-- **Local npm package** (`@notionhq/notion-mcp-server`) — token-based, raw API-style tools (`notion_API-*`), officially deprecated. Functional for CI/headless use.
+The agent publishes to Notion via Python3 urllib using two REST API calls:
+1. `POST /v1/pages` with `Notion-Version: 2022-06-28` — creates the page
+2. `PATCH /v1/pages/:id/markdown` with `Notion-Version: 2026-03-11` and `{"replace_content": "..."}` — writes content with real `heading_3` blocks from `###`
 
-The agent uses a three-path publish approach:
+This is the only publish path. There are no alternatives, no fallbacks, and no MCP paths for publishing. The script is embedded in `agents/vfp.md` (PUBLISHING section) and documented in `docs/notion-publish.md`.
 
-**Path A (remote MCP — preferred for local/interactive sessions):**
-If `notion-create-pages` is available, use `notion-search` to find the parent page and `notion-create-pages` with markdown content. Produces real heading blocks natively.
-
-**Path B (Python3 direct REST API — CI/headless with NOTION_TOKEN in bash env):**
-`POST /v1/pages` to create, then `PATCH /v1/pages/:id/markdown` with `Notion-Version: 2026-03-11` and `{"replace_content": "..."}`. Produces real `heading_3` blocks from `###`.
-
-**Path C (local MCP block API — last resort):**
-`notion_API-post-page` to create, `notion_API-patch-block-children` for content. Section titles become plain paragraphs (no headings). Available in CI via `PROJECT_OPENCODE_CONFIG`.
+`NOTION_TOKEN` must be available in the bash environment (`os.environ.get('NOTION_TOKEN')`). If it is not set, the script exits with an explicit error before making any API call.
 
 The installer configures:
-- **Local tools** (opencode, cursor, vscode, windsurf): remote MCP URL only — no token at install time, OAuth on first use
-- **claude**: `mcp-remote` bridge (stdio wrapper around the remote URL) — OAuth via browser
-- **CI** (`PROJECT_OPENCODE_CONFIG` in target repo): local npm MCP server with `{env:NOTION_TOKEN}` substitution — provides Path C fallback; Path B is preferred when `NOTION_TOKEN` is in env
+- **Local tools** (opencode, cursor, vscode, windsurf): remote MCP URL (`https://mcp.notion.com/mcp`) for general Notion access in the tool; token prompted at install time and written to shell profile so Python3 finds it
+- **claude**: `mcp-remote` bridge for general Notion access; token to shell profile
+- **CI** (`PROJECT_OPENCODE_CONFIG`): minimal config (no MCP server); `NOTION_TOKEN` passed as a job env var from a repository secret
+
+Remote MCP (`https://mcp.notion.com/mcp`) is configured for interactive sessions to enable general workspace interaction (search, browse, edit). It is not used for VFP publishing — it requires OAuth and cannot be used headlessly.
 
 ---
 
@@ -241,7 +236,7 @@ gh api repos/<owner>/<repo>/issues/<parent>/sub_issues \
 ```
 
 **Python3**
-Required for the Notion Markdown API publish step. Used to make the `PATCH /v1/pages/:id/markdown` call with proper JSON escaping. Falls back gracefully to Notion MCP block API if unavailable or if `$NOTION_TOKEN` is not in the bash environment.
+Required for the Notion publish step. Used to run the embedded script in `agents/vfp.md` (PUBLISHING section) which calls `POST /v1/pages` and `PATCH /v1/pages/:id/markdown`.
 
 **Notion Markdown API**
-`PATCH https://api.notion.com/v1/pages/:page_id/markdown` with `Notion-Version: 2026-03-11`. Requires `$NOTION_TOKEN` in the bash environment (separate from the MCP subprocess env). The `replace_content` command replaces the entire page body with enhanced markdown. `###` produces real `heading_3` blocks. The installer stores `NOTION_TOKEN` in the MCP config only — not in the shell profile. Users who want headings can export it in their shell profile.
+`PATCH https://api.notion.com/v1/pages/:page_id/markdown` with `Notion-Version: 2026-03-11`. Requires `$NOTION_TOKEN` in the bash environment. The `replace_content` command replaces the entire page body with enhanced markdown. `###` produces real `heading_3` blocks. The installer writes `NOTION_TOKEN` to the shell profile so Python3 finds it at runtime. See `docs/notion-publish.md` for the full API reference.

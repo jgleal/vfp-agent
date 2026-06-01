@@ -105,11 +105,24 @@ If no relevant test or doc files exist, proceed from the input alone.
 
 When given a raw input, follow this process **in this exact order**:
 
-1. **Find the parent Notion page** — your very first action, before writing any VFP content, is to locate the page where VFPs are stored. Use whichever search tool is available:
-   - If `notion-search` is available (remote MCP): call it with query `"VFPs"` — if results returned, record the first result's `id` as `parent_page_id` and stop. If no results, retry with `"VFP"`, then `"Value Framing"`.
-   - If `notion_API-post-search` is available (local MCP / CI): call with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}` — cascade through `"VFP"` then `"Value Framing"` if needed.
-   - If all three searches return empty on either path, ask the user: "I couldn't find a VFPs page in your Notion workspace. Please share the page ID or URL where you'd like VFPs published." Wait for the answer before continuing.
-   Do not generate any VFP content until you have `parent_page_id`.
+1. **Verify Notion access and find parent page** — Before generating any VFP content, run this Python3 snippet via bash. It confirms `NOTION_TOKEN` is valid and locates the page where VFPs are stored:
+
+   ```python
+   import urllib.request, json, os, sys
+   TOKEN = os.environ.get('NOTION_TOKEN', '')
+   if not TOKEN: sys.exit('ERROR: NOTION_TOKEN is not set')
+   headers = {'Authorization': f'Bearer {TOKEN}', 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28'}
+   for q in ['VFPs', 'VFP', 'Value Framing']:
+       req = urllib.request.Request('https://api.notion.com/v1/search',
+           json.dumps({'query': q, 'filter': {'property': 'object', 'value': 'page'}}).encode(),
+           headers, method='POST')
+       results = json.loads(urllib.request.urlopen(req).read()).get('results', [])
+       if results:
+           print(results[0]['id']); sys.exit(0)
+   sys.exit('ERROR: no VFPs/VFP/Value Framing page found — check NOTION_TOKEN or share the page with your integration')
+   ```
+
+   Record the printed ID as `PARENT_PAGE_ID`. If the script exits with an error, do not proceed — report the error to the user.
 2. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number. You will need these to post the summary comment.
 3. **Read and interpret** — do not simply paraphrase. Interpret the behavioural intent behind the request.
 4. **Detect signals** — identify semantic underestimation, behavioural ambiguity, scope expansion risk, oversized capability framing, or validation uncertainty before you start writing.
@@ -418,82 +431,80 @@ Every generated packet is in **Draft** status by default. Status options:
 
 # PUBLISHING YOUR VFP
 
-You already have `parent_page_id` from step 1. If not, repeat the cascade search before continuing.
+You already have `PARENT_PAGE_ID` from step 1. Run the following Python3 script via bash. Fill in `TITLE` and `MARKDOWN` — do not truncate the content.
 
-Use the first path that applies, in this order:
+```python
+import urllib.request, json, os, sys
 
----
+TOKEN = os.environ.get('NOTION_TOKEN', '')
+if not TOKEN:
+    sys.exit('ERROR: NOTION_TOKEN is not set')
 
-## Path A — Remote MCP tools (preferred for local/interactive sessions)
+def notion(method, path, body=None, ver='2022-06-28'):
+    h = {
+        'Authorization': f'Bearer {TOKEN}',
+        'Content-Type': 'application/json',
+        'Notion-Version': ver,
+    }
+    req = urllib.request.Request(
+        f'https://api.notion.com/v1/{path}',
+        data=json.dumps(body).encode() if body else None,
+        headers=h, method=method,
+    )
+    return json.loads(urllib.request.urlopen(req).read())
 
-If `notion-create-pages` is in your available tools, use this path.
-
-**Step 1 — Create the page and publish content**
-
-Call `notion-create-pages` with:
-- Parent: the `parent_page_id` from step 1
-- Title: `"VFP — <brief description of the request>"`
-- Content: the full VFP as markdown (see format below)
-
-The tool accepts markdown content directly. Use this format:
-
-```
-Status: Draft
-Date: <YYYY-MM-DD today>
+PARENT_PAGE_ID = '<id from step 1>'
+TITLE = 'VFP — <brief description of the request>'
+MARKDOWN = """Status: Draft
+Date: <YYYY-MM-DD>
 Source: [GitHub Issue #<n> — <owner/repo>](https://github.com/<owner/repo>/issues/<n>)
 
 ### §4.1 Request Summary
 
-<prose content>
+<content>
 
 ### §4.2 Intended Outcome
 
-<prose content>
+<content>
 
 ### §4.3 Expected User Behaviour
 
 - <item>
-- <item>
 
-... (continue for all 17 sections)
+...all 17 sections in order..."""
+
+# Create the page
+page = notion('POST', 'pages', {
+    'parent': {'page_id': PARENT_PAGE_ID},
+    'properties': {'title': {'title': [{'text': {'content': TITLE}}]}},
+})
+page_id = page['id']
+page_url = page['url']
+
+# Write content — ### produces real heading_3 blocks
+notion('PATCH', f'pages/{page_id}/markdown',
+    {'replace_content': MARKDOWN},
+    ver='2026-03-11',
+)
+
+print(page_url)
 ```
 
-Rules: `###` heading for each section title. Prose sections as plain paragraphs. List sections as `- ` bullets. Blank line between sections. Omit the Source line if not triggered from a GitHub issue.
+**Markdown format rules** (see `docs/notion-publish.md` for full reference):
+- Metadata block at top: `Status:`, `Date:`, `Source:` as plain lines
+- Each section: `### §4.x Title` on its own line, blank line, then content
+- Prose sections (§4.1, §4.2, §4.4, §4.10, §4.14, §4.15, §4.17): plain paragraphs
+- List sections (§4.3, §4.5–§4.9, §4.11–§4.13, §4.16): `- item` per line
+- Blank line between every section
+- Omit the Source line if not triggered from a GitHub issue
 
-Record the returned page `id` and `url`.
+Record the printed URL as `page_url`.
 
----
-
-## Path B — Python3 direct REST API (CI / headless / NOTION_TOKEN in bash env)
-
-If `NOTION_TOKEN` is in the bash environment, use Python3 urllib. This produces real heading blocks via the Markdown API.
-
-**Step 1 — Create the page**
-
-`POST https://api.notion.com/v1/pages` with `Authorization: Bearer $NOTION_TOKEN`, `Content-Type: application/json`, `Notion-Version: 2022-06-28`:
-```json
-{
-  "parent": { "page_id": "<parent_page_id>" },
-  "properties": { "title": { "title": [{ "text": { "content": "VFP — <brief title>" } }] } }
-}
-```
-Record the returned `id` as `page_id` and `url` as `page_url`.
-
-**Step 2 — Publish content via Markdown API**
-
-`PATCH https://api.notion.com/v1/pages/<page_id>/markdown` with `Authorization: Bearer $NOTION_TOKEN`, `Content-Type: application/json`, `Notion-Version: 2026-03-11`, body `{"replace_content": "<full VFP markdown using same format as Path A>"}`.
+**If the script fails**: post the full VFP text as a GitHub comment and state it is in Draft state pending Notion publish.
 
 ---
 
-## Path C — Local MCP block API (last resort / CI fallback)
-
-If neither Path A nor Path B is available, use `notion_API-post-page` to create the page, then `notion_API-patch-block-children` for content. Section titles become plain `paragraph` blocks (no real headings). Use `bulleted_list_item` for list sections. Multiple calls are allowed if content exceeds 100 blocks.
-
----
-
-## Step — Post the GitHub comment (all paths)
-
-After publishing, use this exact structure:
+**Post the GitHub comment** using this exact structure:
 
 ```bash
 gh issue comment <number> --repo <owner/repo> --body "## VFP Published
@@ -514,8 +525,6 @@ gh issue comment <number> --repo <owner/repo> --body "## VFP Published
 ```
 
 List all significant risk signals from §4.9 — typically 3–5. Each bullet must name the classification and give one concrete sentence.
-
-**If all Notion publish paths fail**: post the full VFP text as a GitHub comment and state it is in Draft state pending Notion publish.
 
 ---
 
