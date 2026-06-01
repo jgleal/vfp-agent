@@ -107,6 +107,11 @@ agents/vfp.md              # Single source of truth for the agent prompt (openco
 bin/install.js             # Interactive TUI installer — the core of this project
 install.sh                 # Curl-pipeable bash shim → delegates to bin/install.js via npx
 package.json               # Package config; bin entry point is bin/install.js
+tools/                     # Standalone tool scripts — installed at runtime, not shipped with agent
+  notion-find-parent.py    # Finds Notion parent page; fast-path PARENT_PAGE_ID, cascade search fallback
+  notion-publish.py        # Publishes VFP to Notion; --parent-id, --title via argv; markdown via stdin
+  notion-find-parent.ts    # OpenCode Custom Tool wrapper for notion-find-parent.py
+  notion-publish.ts        # OpenCode Custom Tool wrapper for notion-publish.py
 methodology/               # Canonical methodology documentation (9 files)
   core-methodology.md      # §2 Core Delivery Assumptions, §3 Primary Reasoning Priorities
   vfp-guide.md             # Full VFP guide including §4.18 Validation Outcome
@@ -117,6 +122,8 @@ methodology/               # Canonical methodology documentation (9 files)
   example-library.md       # Currently empty — needs real VFP examples to be useful; mechanism for adding them not yet defined
   retro-procedure.md       # Phase 3+ spec — 3-level retro output model, PR flow as canonical Level 3 path
   learnings.md             # Phase 3+ spec — running log of observed patterns (watching → confirmed → methodology-proposed → methodology-updated)
+docs/
+  notion-publish.md        # Notion Markdown API spec: endpoints, auth, format, script, error table
 README.md                  # User-facing docs with Mermaid flow diagram
 AGENTS.md                  # This file
 ```
@@ -152,13 +159,26 @@ When running in a directory with a repo, the agent uses the codebase as context 
 **`methodology/learnings.md` is not runtime context**
 It is source material for doc evolution. The agent writes to it directly using file tools. It is not injected into agent sessions.
 
-**Notion publish — Python3 direct API (single path)**
+**Notion publish — Python3 direct API (three-option resolution)**
 
-The agent publishes to Notion via Python3 urllib using two REST API calls:
+The agent publishes to Notion via two REST API calls:
 1. `POST /v1/pages` with `Notion-Version: 2022-06-28` — creates the page
 2. `PATCH /v1/pages/:id/markdown` with `Notion-Version: 2026-03-11` and `{"replace_content": "..."}` — writes content with real `heading_3` blocks from `###`
 
-This is the only publish path. There are no alternatives, no fallbacks, and no MCP paths for publishing. The script is embedded in `agents/vfp.md` (PUBLISHING section) and documented in `docs/notion-publish.md`.
+The agent resolves which mechanism to use in priority order:
+- **Option A — OpenCode Custom Tool** (`notion_publish` / `notion_find_parent`): used when running inside OpenCode; `.ts` wrappers installed to `~/.config/opencode/tools/`
+- **Option B — installed script**: `python3 ~/.config/vfp-agent/tools/notion-publish.py` — available after `npx install` on local machines
+- **Option C — inline script**: embedded Python3 in `agents/vfp.md`; used in CI and any environment without the installed scripts
+
+This design is documented in `docs/notion-publish.md`. Remote MCP (`https://mcp.notion.com/mcp`) is configured for interactive sessions for general workspace browsing — it is **not** a publish path.
+
+**Tools architecture**
+
+`tools/` contains standalone Python3 scripts. Each script is self-contained: all inputs via argv/env/stdin, no external state. Scripts are installed at runtime by `bin/install.js`:
+- `.py` → `~/.config/vfp-agent/tools/` for all providers
+- `.ts` → `~/.config/opencode/tools/` for OpenCode only (Custom Tool wrappers)
+
+CI environments do not use installed scripts — the agent falls back to the inline Option C script embedded in `agents/vfp.md`.
 
 `NOTION_TOKEN` must be available in the bash environment (`os.environ.get('NOTION_TOKEN')`). If it is not set, the script exits with an explicit error before making any API call.
 
@@ -184,6 +204,13 @@ The installer writes the agent prompt to these locations per tool:
 | codex | `~/.codex/agents/vfp.md` |
 | vscode | tool-specific path (see `bin/install.js`) |
 | windsurf | tool-specific path (see `bin/install.js`) |
+
+Tool scripts are installed to:
+
+| Script type | Destination | Providers |
+|---|---|---|
+| `.py` scripts | `~/.config/vfp-agent/tools/` | all |
+| `.ts` wrappers | `~/.config/opencode/tools/` | opencode only |
 
 MCP config (Notion) is injected into each tool's config file:
 

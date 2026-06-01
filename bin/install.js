@@ -26,6 +26,19 @@ const RAW_BASE      = `https://raw.githubusercontent.com/${REPO}/main`;
 const AGENT_SOURCE  = 'agents/vfp.md';
 const GH_API_BASE   = `https://api.github.com/repos/${REPO}`;
 
+// Tool scripts — Python scripts are agnostic (callable by any agent via bash).
+// TypeScript wrappers are OpenCode-specific Custom Tools.
+// Python scripts install to ~/.config/vfp-agent/tools/ on all providers.
+// TypeScript wrappers install to ~/.config/opencode/tools/ for opencode only.
+const TOOLS_PY = [
+  'tools/notion-find-parent.py',
+  'tools/notion-publish.py',
+];
+const TOOLS_TS = [
+  'tools/notion-find-parent.ts',
+  'tools/notion-publish.ts',
+];
+
 // Methodology skill files — source is methodology/*.md (canonical, no duplication).
 // Frontmatter is generated inline at install time; methodology files stay plain markdown.
 // vfp-retro-procedure intentionally omitted — deferred to Phase 3+.
@@ -543,6 +556,72 @@ function readSkillFiles(repoRoot, forceRemote) {
   });
 }
 
+// ── Tool installation ──────────────────────────────────────────────────────
+
+// ~/.config/vfp-agent/tools/ (macOS/Linux) or %APPDATA%\vfp-agent\tools\ (Windows)
+function vfpToolsDir() {
+  if (IS_WIN)
+    return path.join(
+      process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+      'vfp-agent', 'tools'
+    );
+  return path.join(
+    process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'),
+    'vfp-agent', 'tools'
+  );
+}
+
+// ~/.config/opencode/tools/
+function opencodeToolsDir() {
+  return path.join(
+    process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'),
+    'opencode', 'tools'
+  );
+}
+
+// Install tool scripts. providerId is used to decide whether to install TS wrappers.
+// repoRoot/forceRemote follow the same convention as readSourceFile.
+function installTools(providerId, repoRoot, forceRemote, dry) {
+  const pyDir = vfpToolsDir();
+  const tsDir = opencodeToolsDir();
+  const installed = [];
+
+  // Python scripts — installed for every provider
+  for (const rel of TOOLS_PY) {
+    const content = (repoRoot && !forceRemote)
+      ? fs.readFileSync(path.join(repoRoot, rel), 'utf8')
+      : fetchRemoteFile(rel);
+    const dest = path.join(pyDir, path.basename(rel));
+    if (dry) {
+      process.stdout.write(`  would write: ${dest}\n`);
+    } else {
+      fs.mkdirSync(pyDir, { recursive: true });
+      fs.writeFileSync(dest, content, 'utf8');
+      fs.chmodSync(dest, 0o755);
+      installed.push(dest);
+    }
+  }
+
+  // TypeScript wrappers — OpenCode Custom Tools only
+  if (providerId === 'opencode') {
+    for (const rel of TOOLS_TS) {
+      const content = (repoRoot && !forceRemote)
+        ? fs.readFileSync(path.join(repoRoot, rel), 'utf8')
+        : fetchRemoteFile(rel);
+      const dest = path.join(tsDir, path.basename(rel));
+      if (dry) {
+        process.stdout.write(`  would write: ${dest}\n`);
+      } else {
+        fs.mkdirSync(tsDir, { recursive: true });
+        fs.writeFileSync(dest, content, 'utf8');
+        installed.push(dest);
+      }
+    }
+  }
+
+  return installed;
+}
+
 // Build merged single-file content for clients that don't support native skills.
 // Strips frontmatter from each skill file and appends as labelled sections.
 function buildMergedContent(agentSource, toolId, skillFiles) {
@@ -838,7 +917,7 @@ async function interactiveSelect(detected, all, c, opts) {
 
 // ── Per-provider install ───────────────────────────────────────────────────
 async function installProvider(prov, ctx) {
-  const { say, note, warn, opts, source, skillFiles, results, sharedNotionToken } = ctx;
+  const { say, note, warn, opts, source, skillFiles, results, sharedNotionToken, repoRoot } = ctx;
   const { id, label, supportsAgents } = prov;
 
   say(`→ ${label}`);
@@ -891,6 +970,16 @@ async function installProvider(prov, ctx) {
       note('    GOOGLE_GENERATIVE_AI_API_KEY   your Google AI Studio API key (free at aistudio.google.com)');
       note('    NOTION_TOKEN                   your Notion integration token');
       note('  Then comment /vfp-check on any issue to verify.');
+    }
+  }
+
+  // Install tool scripts (.py for all providers; .ts wrappers for opencode)
+  if (fileResult !== 'skip') {
+    const forceRemote = !repoRoot;
+    installTools(id, repoRoot, forceRemote, opts.dryRun);
+    if (!opts.dryRun) {
+      process.stdout.write(`  tools: ${vfpToolsDir()}/\n`);
+      if (id === 'opencode') process.stdout.write(`  opencode tools: ${opencodeToolsDir()}/\n`);
     }
   }
 
@@ -1022,7 +1111,7 @@ async function main() {
     opts.nonInteractive = true;
     const results = { installed: [], skipped: [], failed: [] };
     const sharedNotionToken = { value: null };
-    const ctx = { say, note, warn, opts, source, skillFiles, results, sharedNotionToken };
+    const ctx = { say, note, warn, opts, source, skillFiles, results, sharedNotionToken, repoRoot };
 
     for (const p of active) {
       try {
@@ -1082,7 +1171,7 @@ async function main() {
   process.stdout.write(`\nInstalling to ${active.length} tool(s)...\n\n`);
 
   const sharedNotionToken = { value: null };
-  const ctx = { say, note, warn, opts, source, skillFiles, results, sharedNotionToken };
+  const ctx = { say, note, warn, opts, source, skillFiles, results, sharedNotionToken, repoRoot };
 
   for (const p of active) {
     try {
