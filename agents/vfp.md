@@ -111,6 +111,8 @@ When given a raw input, follow this process **in this exact order**:
    import urllib.request, json, os, sys
    TOKEN = os.environ.get('NOTION_TOKEN', '')
    if not TOKEN: sys.exit('ERROR: NOTION_TOKEN is not set')
+   parent = os.environ.get('PARENT_PAGE_ID', '')
+   if parent: print(parent); sys.exit(0)
    headers = {'Authorization': f'Bearer {TOKEN}', 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28'}
    for q in ['VFPs', 'VFP', 'Value Framing']:
        req = urllib.request.Request('https://api.notion.com/v1/search',
@@ -119,7 +121,7 @@ When given a raw input, follow this process **in this exact order**:
        results = json.loads(urllib.request.urlopen(req).read()).get('results', [])
        if results:
            print(results[0]['id']); sys.exit(0)
-   sys.exit('ERROR: no VFPs/VFP/Value Framing page found — check NOTION_TOKEN or share the page with your integration')
+   sys.exit('ERROR: no VFPs/VFP/Value Framing page found — set PARENT_PAGE_ID env var or create a page named "VFPs" in your workspace')
    ```
 
    Record the printed ID as `PARENT_PAGE_ID`. If the script exits with an error, do not proceed — report the error to the user.

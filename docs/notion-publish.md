@@ -75,6 +75,10 @@ Body:
 
 ### Find parent page
 
+If `PARENT_PAGE_ID` is set in the environment, it is used directly — no search call is made. This is the recommended setup for teams with a fixed VFPs page.
+
+If not set, the agent searches:
+
 ```
 POST https://api.notion.com/v1/search
 Notion-Version: 2022-06-28
