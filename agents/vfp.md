@@ -105,57 +105,20 @@ If no relevant test or doc files exist, proceed from the input alone.
 
 When given a raw input, follow this process **in this exact order**:
 
-1. **Verify Notion access and find parent page** — Before generating any VFP content, locate the Notion parent page. Choose the first option that applies:
+1. **Verify Notion access and find parent page** — Before generating any VFP content, locate the Notion parent page. Try in order:
 
-   **Option A — OpenCode Custom Tool** (if `notion_find_parent` is available as a tool):
+   **Option A — OpenCode Custom Tool** (if `notion_find_parent` is available):
    ```
    notion_find_parent()
    ```
 
-   **Option B — installed script** (if `~/.config/vfp-agent/tools/notion-find-parent.py` exists):
+   **Option B — script** (bash fallback):
    ```bash
+   python3 .opencode/tools/notion-find-parent.py 2>/dev/null || \
    python3 ~/.config/vfp-agent/tools/notion-find-parent.py
    ```
 
-   **Option C — inline script** (CI or any environment without the installed script):
-   ```python
-   import urllib.request, json, os, sys
-   TOKEN = os.environ.get('NOTION_TOKEN', '')
-   if not TOKEN: sys.exit('ERROR: NOTION_TOKEN is not set')
-   parent = os.environ.get('PARENT_PAGE_ID', '')
-   if parent: print(parent); sys.exit(0)
-   headers = {'Authorization': f'Bearer {TOKEN}', 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28'}
-   for q in ['VFPs', 'VFP', 'Value Framing']:
-       req = urllib.request.Request('https://api.notion.com/v1/search',
-           json.dumps({'query': q, 'filter': {'property': 'object', 'value': 'page'}}).encode(),
-           headers, method='POST')
-       results = json.loads(urllib.request.urlopen(req).read()).get('results', [])
-       if results:
-           print(results[0]['id']); sys.exit(0)
-   sys.exit('ERROR: no VFPs/VFP/Value Framing page found — set PARENT_PAGE_ID env var or create a page named "VFPs" in your workspace')
-   ```
-
-   Record the printed ID as `PARENT_PAGE_ID`. If any option exits with an error, do not proceed — report the error to the user.
-
-
-   ```python
-   import urllib.request, json, os, sys
-   TOKEN = os.environ.get('NOTION_TOKEN', '')
-   if not TOKEN: sys.exit('ERROR: NOTION_TOKEN is not set')
-   parent = os.environ.get('PARENT_PAGE_ID', '')
-   if parent: print(parent); sys.exit(0)
-   headers = {'Authorization': f'Bearer {TOKEN}', 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28'}
-   for q in ['VFPs', 'VFP', 'Value Framing']:
-       req = urllib.request.Request('https://api.notion.com/v1/search',
-           json.dumps({'query': q, 'filter': {'property': 'object', 'value': 'page'}}).encode(),
-           headers, method='POST')
-       results = json.loads(urllib.request.urlopen(req).read()).get('results', [])
-       if results:
-           print(results[0]['id']); sys.exit(0)
-   sys.exit('ERROR: no VFPs/VFP/Value Framing page found — set PARENT_PAGE_ID env var or create a page named "VFPs" in your workspace')
-   ```
-
-   Record the printed ID as `PARENT_PAGE_ID`. If the script exits with an error, do not proceed — report the error to the user.
+   Record the printed ID as `PARENT_PAGE_ID`. If both fail, do not proceed — report the error.
 2. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number. You will need these to post the summary comment.
 3. **Read and interpret** — do not simply paraphrase. Interpret the behavioural intent behind the request.
 4. **Detect signals** — identify semantic underestimation, behavioural ambiguity, scope expansion risk, oversized capability framing, or validation uncertainty before you start writing.
@@ -464,9 +427,9 @@ Every generated packet is in **Draft** status by default. Status options:
 
 # PUBLISHING YOUR VFP
 
-You already have `PARENT_PAGE_ID` from step 1. Choose the first option that applies:
+You already have `PARENT_PAGE_ID` from step 1. Try in order:
 
-**Option A — OpenCode Custom Tool** (if `notion_publish` is available as a tool):
+**Option A — OpenCode Custom Tool** (if `notion_publish` is available):
 ```
 notion_publish(
   parent_page_id = "<PARENT_PAGE_ID>",
@@ -475,69 +438,16 @@ notion_publish(
 )
 ```
 
-**Option B — installed script** (if `~/.config/vfp-agent/tools/notion-publish.py` exists):
+**Option B — script** (bash fallback):
 ```bash
+printf '%s' "<full VFP markdown>" | \
+  python3 .opencode/tools/notion-publish.py \
+    --parent-id "<PARENT_PAGE_ID>" \
+    --title "VFP — <brief description>" 2>/dev/null || \
 printf '%s' "<full VFP markdown>" | \
   python3 ~/.config/vfp-agent/tools/notion-publish.py \
     --parent-id "<PARENT_PAGE_ID>" \
     --title "VFP — <brief description>"
-```
-
-**Option C — inline script** (CI or any environment without the installed script):
-
-```python
-import urllib.request, json, os, sys
-
-TOKEN = os.environ.get('NOTION_TOKEN', '')
-if not TOKEN:
-    sys.exit('ERROR: NOTION_TOKEN is not set')
-
-def notion(method, path, body=None, ver='2022-06-28'):
-    h = {
-        'Authorization': f'Bearer {TOKEN}',
-        'Content-Type': 'application/json',
-        'Notion-Version': ver,
-    }
-    req = urllib.request.Request(
-        f'https://api.notion.com/v1/{path}',
-        data=json.dumps(body).encode() if body else None,
-        headers=h, method=method,
-    )
-    return json.loads(urllib.request.urlopen(req).read())
-
-PARENT_PAGE_ID = '<id from step 1>'
-TITLE = 'VFP — <brief description of the request>'
-MARKDOWN = """Status: Draft
-Date: <YYYY-MM-DD>
-Source: [GitHub Issue #<n> — <owner/repo>](https://github.com/<owner/repo>/issues/<n>)
-
-### §4.1 Request Summary
-
-<content>
-
-### §4.2 Intended Outcome
-
-<content>
-
-### §4.3 Expected User Behaviour
-
-- <item>
-
-...all 17 sections in order..."""
-
-page = notion('POST', 'pages', {
-    'parent': {'page_id': PARENT_PAGE_ID},
-    'properties': {'title': {'title': [{'text': {'content': TITLE}}]}},
-})
-page_id = page['id']
-page_url = page['url']
-
-notion('PATCH', f'pages/{page_id}/markdown',
-    {'replace_content': MARKDOWN},
-    ver='2026-03-11',
-)
-
-print(page_url)
 ```
 
 **Markdown format rules** (see `docs/notion-publish.md` for full reference):
@@ -550,7 +460,7 @@ print(page_url)
 
 Record the printed URL as `page_url`.
 
-**If all options fail**: post the full VFP text as a GitHub comment and state it is in Draft state pending Notion publish.
+**If both options fail**: post the full VFP text as a GitHub comment and state it is in Draft state pending Notion publish.
 
 ---
 

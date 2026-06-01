@@ -602,7 +602,7 @@ function installTools(providerId, repoRoot, forceRemote, dry) {
     }
   }
 
-  // TypeScript wrappers — OpenCode Custom Tools only
+  // TypeScript wrappers — OpenCode Custom Tools only (global)
   if (providerId === 'opencode') {
     for (const rel of TOOLS_TS) {
       const content = (repoRoot && !forceRemote)
@@ -615,6 +615,31 @@ function installTools(providerId, repoRoot, forceRemote, dry) {
         fs.mkdirSync(tsDir, { recursive: true });
         fs.writeFileSync(dest, content, 'utf8');
         installed.push(dest);
+      }
+    }
+
+    // Project-level install: if CWD has .opencode/, also write .py + .ts there
+    // so CI (which has no global ~/.config) can pick them up from the checkout.
+    const projectToolsDir = path.join(process.cwd(), '.opencode', 'tools');
+    const projectOpencodeDir = path.join(process.cwd(), '.opencode');
+    if (fs.existsSync(projectOpencodeDir)) {
+      const allToolRels = [...TOOLS_PY, ...TOOLS_TS];
+      for (const rel of allToolRels) {
+        const content = (repoRoot && !forceRemote)
+          ? fs.readFileSync(path.join(repoRoot, rel), 'utf8')
+          : fetchRemoteFile(rel);
+        const dest = path.join(projectToolsDir, path.basename(rel));
+        if (dry) {
+          process.stdout.write(`  would write: ${dest}\n`);
+        } else {
+          fs.mkdirSync(projectToolsDir, { recursive: true });
+          fs.writeFileSync(dest, content, 'utf8');
+          if (rel.endsWith('.py')) fs.chmodSync(dest, 0o755);
+          installed.push(dest);
+        }
+      }
+      if (!dry) {
+        process.stdout.write(`  project tools: ${projectToolsDir}/\n`);
       }
     }
   }

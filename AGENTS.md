@@ -159,26 +159,26 @@ When running in a directory with a repo, the agent uses the codebase as context 
 **`methodology/learnings.md` is not runtime context**
 It is source material for doc evolution. The agent writes to it directly using file tools. It is not injected into agent sessions.
 
-**Notion publish — Python3 direct API (three-option resolution)**
+**Notion publish — Python3 direct API (two-option resolution)**
 
 The agent publishes to Notion via two REST API calls:
 1. `POST /v1/pages` with `Notion-Version: 2022-06-28` — creates the page
 2. `PATCH /v1/pages/:id/markdown` with `Notion-Version: 2026-03-11` and `{"replace_content": "..."}` — writes content with real `heading_3` blocks from `###`
 
 The agent resolves which mechanism to use in priority order:
-- **Option A — OpenCode Custom Tool** (`notion_publish` / `notion_find_parent`): used when running inside OpenCode; `.ts` wrappers installed to `~/.config/opencode/tools/`
-- **Option B — installed script**: `python3 ~/.config/vfp-agent/tools/notion-publish.py` — available after `npx install` on local machines
-- **Option C — inline script**: embedded Python3 in `agents/vfp.md`; used in CI and any environment without the installed scripts
+- **Option A — OpenCode Custom Tool** (`notion_publish` / `notion_find_parent`): used when running inside OpenCode; `.ts` wrappers installed to `.opencode/tools/` (project-level, works in CI) and `~/.config/opencode/tools/` (global)
+- **Option B — bash script**: `python3 .opencode/tools/notion-publish.py` (project-level) with fallback to `python3 ~/.config/vfp-agent/tools/notion-publish.py` (global)
 
-This design is documented in `docs/notion-publish.md`. Remote MCP (`https://mcp.notion.com/mcp`) is configured for interactive sessions for general workspace browsing — it is **not** a publish path.
+There is no inline fallback. Scripts are always available via Option B because the installer writes them to `.opencode/tools/` in the project when `.opencode/` exists. This design is documented in `docs/notion-publish.md`. Remote MCP (`https://mcp.notion.com/mcp`) is configured for interactive sessions for general workspace browsing — it is **not** a publish path.
 
 **Tools architecture**
 
 `tools/` contains standalone Python3 scripts. Each script is self-contained: all inputs via argv/env/stdin, no external state. Scripts are installed at runtime by `bin/install.js`:
-- `.py` → `~/.config/vfp-agent/tools/` for all providers
-- `.ts` → `~/.config/opencode/tools/` for OpenCode only (Custom Tool wrappers)
+- `.py` + `.ts` → `./.opencode/tools/` when the installer runs in a project with `.opencode/` dir (picked up by CI checkout)
+- `.py` → `~/.config/vfp-agent/tools/` for all providers (global)
+- `.ts` → `~/.config/opencode/tools/` for OpenCode only (global)
 
-CI environments do not use installed scripts — the agent falls back to the inline Option C script embedded in `agents/vfp.md`.
+The `.ts` wrappers resolve the `.py` script path: project-level (`.opencode/tools/`) first, global fallback.
 
 `NOTION_TOKEN` must be available in the bash environment (`os.environ.get('NOTION_TOKEN')`). If it is not set, the script exits with an explicit error before making any API call.
 
