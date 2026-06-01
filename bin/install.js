@@ -148,7 +148,7 @@ jobs:
           share: "false"
           mentions: "/vfp"
           use_github_token: "true"
-          prompt: "Generate a Value Framing Packet (VFP) for the delivery request described in this issue. Follow the VFP agent instructions."
+          prompt: "Your first action must be to locate the parent Notion page where VFPs are stored — use notion_API-post-search (query: 'VFPs') before generating any content. Then generate a Value Framing Packet (VFP) for the delivery request in this issue using exactly the 17-section structure in your instructions. Then publish to Notion: NOTION_TOKEN is in your environment — use Python3 urllib to POST /v1/pages then PATCH /v1/pages/{id}/markdown with Notion-Version: 2026-03-11 and {replace_content: ...} for real headings; fall back to notion_API-patch-block-children if unavailable. Then post the structured GitHub comment as specified in your PUBLISHING instructions."
 
   # /oc or /opencode: general-purpose opencode agent
   opencode:
@@ -297,15 +297,19 @@ function transformContent(source, toolId) {
 }
 
 // ── Notion MCP config per provider ────────────────────────────────────────
+// All tools use the hosted remote MCP (https://mcp.notion.com/mcp).
+// Authentication is handled via OAuth on first use — no token required at install time.
+// For CI/headless use, the agent falls back to the direct Notion REST API with NOTION_TOKEN.
+const NOTION_REMOTE_URL = 'https://mcp.notion.com/mcp';
+
 const NOTION_MCP_CONFIGS = {
   opencode: {
     configFile: () => path.join(opencodeConfigDir(), 'opencode.json'),
     mcpKey: 'mcp',
     serverKey: 'notion',
-    buildEntry: (token) => ({
-      type: 'local',
-      command: ['npx', '-y', '@notionhq/notion-mcp-server'],
-      environment: { NOTION_TOKEN: token },
+    buildEntry: () => ({
+      type: 'remote',
+      url: NOTION_REMOTE_URL,
       enabled: true,
     }),
   },
@@ -313,44 +317,30 @@ const NOTION_MCP_CONFIGS = {
     configFile: () => path.join(os.homedir(), '.claude', 'settings.json'),
     mcpKey: 'mcpServers',
     serverKey: 'notion',
-    buildEntry: (token) => ({
-      type: 'stdio',
+    // Claude Code: remote MCP via mcp-remote bridge (claude_desktop_config.json doesn't support
+    // remote HTTP directly; mcp-remote handles the OAuth flow via browser)
+    buildEntry: () => ({
       command: 'npx',
-      args: ['-y', '@notionhq/notion-mcp-server'],
-      env: { NOTION_TOKEN: token },
+      args: ['-y', 'mcp-remote', NOTION_REMOTE_URL],
     }),
   },
   cursor: {
     configFile: () => path.join(os.homedir(), '.cursor', 'mcp.json'),
     mcpKey: 'mcpServers',
     serverKey: 'notion',
-    buildEntry: (token) => ({
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', '@notionhq/notion-mcp-server'],
-      env: { NOTION_TOKEN: token },
-    }),
+    buildEntry: () => ({ url: NOTION_REMOTE_URL }),
   },
   vscode: {
     configFile: () => path.join(vscodeUserDir(), 'mcp.json'),
     mcpKey: 'servers',
     serverKey: 'notion',
-    buildEntry: (token) => ({
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', '@notionhq/notion-mcp-server'],
-      env: { NOTION_TOKEN: token },
-    }),
+    buildEntry: () => ({ type: 'http', url: NOTION_REMOTE_URL }),
   },
   windsurf: {
     configFile: () => path.join(os.homedir(), '.codeium', 'windsurf', 'mcp_config.json'),
     mcpKey: 'mcpServers',
     serverKey: 'notion',
-    buildEntry: (token) => ({
-      command: 'npx',
-      args: ['-y', '@notionhq/notion-mcp-server'],
-      env: { NOTION_TOKEN: token },
-    }),
+    buildEntry: () => ({ serverUrl: NOTION_REMOTE_URL }),
   },
 };
 
@@ -692,16 +682,57 @@ function notionMcpConfigured(providerId) {
   return !!(data[cfg.mcpKey] && data[cfg.mcpKey][cfg.serverKey]);
 }
 
-function installNotionMcp(providerId, token, dry) {
+function installNotionMcp(providerId, dry) {
   const cfg = NOTION_MCP_CONFIGS[providerId];
   if (!cfg) return;
   const file = cfg.configFile();
   if (dry) { process.stdout.write(`  would add Notion MCP to: ${file}\n`); return; }
   const data = readJson(file);
   if (!data[cfg.mcpKey]) data[cfg.mcpKey] = {};
-  data[cfg.mcpKey][cfg.serverKey] = cfg.buildEntry(token);
+  data[cfg.mcpKey][cfg.serverKey] = cfg.buildEntry();
   writeJson(file, data);
   process.stdout.write(`  Notion MCP configured in: ${file}\n`);
+}
+
+// ── Shell profile token export ─────────────────────────────────────────────
+function detectShellProfile() {
+  const shell = process.env.SHELL || '';
+  if (shell.includes('zsh'))  return path.join(os.homedir(), '.zshrc');
+  if (shell.includes('bash')) {
+    // macOS bash uses .bash_profile; Linux uses .bashrc
+    const profile = path.join(os.homedir(), '.bash_profile');
+    return fs.existsSync(profile) ? profile : path.join(os.homedir(), '.bashrc');
+  }
+  if (shell.includes('fish')) return path.join(os.homedir(), '.config', 'fish', 'config.fish');
+  // Default fallback
+  return path.join(os.homedir(), '.profile');
+}
+
+function writeTokenToShellProfile(name, value) {
+  const profile = detectShellProfile();
+  let contents = '';
+  try { contents = fs.readFileSync(profile, 'utf8'); } catch (_) { /* file may not exist */ }
+
+  const isFish = profile.endsWith('config.fish');
+  const exportLine = isFish
+    ? `set -x ${name} "${value}"`
+    : `export ${name}="${value}"`;
+
+  // Check if already set (any value) — skip to avoid duplicates
+  const alreadySet = isFish
+    ? contents.includes(`set -x ${name} `)
+    : contents.includes(`export ${name}=`);
+
+  if (alreadySet) {
+    process.stdout.write(`  ${name} already in ${profile} — skipping\n`);
+    return;
+  }
+
+  const block = `\n# Added by vfp-agent installer\n${exportLine}\n`;
+  fs.mkdirSync(path.dirname(profile), { recursive: true });
+  fs.appendFileSync(profile, block, 'utf8');
+  process.stdout.write(`  Wrote ${name} to ${profile}\n`);
+  process.stdout.write(`  Run: source ${profile}\n`);
 }
 
 // ── Interactive prompt ─────────────────────────────────────────────────────
@@ -877,33 +908,14 @@ async function installProvider(prov, ctx) {
     if (notionMcpConfigured(id)) {
       note('  Notion MCP already configured');
     } else {
-      warn('  Notion MCP not found — required for VFP publishing');
-      if (!opts.dryRun && !opts.nonInteractive) {
-        let token = sharedNotionToken.value;
-        if (!token) {
-          process.stdout.write('\n');
-          process.stdout.write('  The VFP agent publishes artefacts to Notion. To enable this:\n');
-          process.stdout.write('\n');
-          process.stdout.write('    1. Open https://www.notion.so/my-integrations\n');
-          process.stdout.write('    2. Click "New integration" → give it a name → Save\n');
-          process.stdout.write('    3. Copy the "Internal Integration Token" (starts with ntn_)\n');
-          process.stdout.write('    4. After install, open your VFP workspace page in Notion\n');
-          process.stdout.write('       → Share → Invite → select your integration\n');
-          process.stdout.write('\n');
-          token = await prompt('  Paste token (or press Enter to skip): ');
-          if (token) sharedNotionToken.value = token;
-        }
-        if (token) {
-          installNotionMcp(id, token, false);
-        } else {
-          note('  Skipped. To configure later, re-run:');
-          note(`    node bin/install.js --only ${id} --force`);
-        }
-      } else if (opts.dryRun) {
-        installNotionMcp(id, '<token>', true);
+      if (!opts.dryRun) {
+        installNotionMcp(id, false);
+        process.stdout.write('\n');
+        process.stdout.write('  Notion MCP configured (remote — https://mcp.notion.com/mcp)\n');
+        process.stdout.write('  Authentication: OAuth via browser on first use.\n');
+        process.stdout.write('  For CI/headless use, set NOTION_TOKEN in your environment.\n');
       } else {
-        note('  Notion MCP not configured. To add it, re-run without --non-interactive:');
-        note('    node bin/install.js --only ' + id + ' --force');
+        installNotionMcp(id, true);
       }
     }
   }

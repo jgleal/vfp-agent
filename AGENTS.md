@@ -152,14 +152,27 @@ When running in a directory with a repo, the agent uses the codebase as context 
 **`methodology/learnings.md` is not runtime context**
 It is source material for doc evolution. The agent writes to it directly using file tools. It is not injected into agent sessions.
 
-**Notion MCP block type limitation and Markdown API workaround**
-The `notion_API-patch-block-children` tool only supports two block types: `paragraph` and `bulleted_list_item`. Heading blocks are not supported — a deliberate simplification in `@notionhq/notion-mcp-server` v2.2.1 (`scripts/notion-openapi.json`).
+**Notion MCP — remote vs local**
 
-The agent now uses a two-step publish approach to bypass this:
-1. Create the empty page via the Notion MCP tool (title + parent).
-2. Write VFP content via the **Notion Markdown API**: `PATCH https://api.notion.com/v1/pages/{page_id}/markdown` with `Notion-Version: 2026-03-11` and `Authorization: Bearer $NOTION_TOKEN`. Uses `replace_content` with the full VFP as enhanced markdown — `###` produces real heading_3 blocks.
+Notion maintains two Notion MCP implementations:
+- **Remote hosted MCP** (`https://mcp.notion.com/mcp`) — OAuth-based, markdown-native tools (`notion-search`, `notion-create-pages`, `notion-update-page`, etc.), actively maintained. **Cannot be used headlessly** (OAuth requires human browser interaction).
+- **Local npm package** (`@notionhq/notion-mcp-server`) — token-based, raw API-style tools (`notion_API-*`), officially deprecated. Functional for CI/headless use.
 
-The `$NOTION_TOKEN` for the direct API call must be available in the bash environment. The installer writes it to the MCP subprocess env only (inside the tool's JSON config), not to the shell profile. If the token is not in the bash env, the agent falls back to the MCP block approach (section titles become plain paragraphs).
+The agent uses a three-path publish approach:
+
+**Path A (remote MCP — preferred for local/interactive sessions):**
+If `notion-create-pages` is available, use `notion-search` to find the parent page and `notion-create-pages` with markdown content. Produces real heading blocks natively.
+
+**Path B (Python3 direct REST API — CI/headless with NOTION_TOKEN in bash env):**
+`POST /v1/pages` to create, then `PATCH /v1/pages/:id/markdown` with `Notion-Version: 2026-03-11` and `{"replace_content": "..."}`. Produces real `heading_3` blocks from `###`.
+
+**Path C (local MCP block API — last resort):**
+`notion_API-post-page` to create, `notion_API-patch-block-children` for content. Section titles become plain paragraphs (no headings). Available in CI via `PROJECT_OPENCODE_CONFIG`.
+
+The installer configures:
+- **Local tools** (opencode, cursor, vscode, windsurf): remote MCP URL only — no token at install time, OAuth on first use
+- **claude**: `mcp-remote` bridge (stdio wrapper around the remote URL) — OAuth via browser
+- **CI** (`PROJECT_OPENCODE_CONFIG` in target repo): local npm MCP server with `{env:NOTION_TOKEN}` substitution — provides Path C fallback; Path B is preferred when `NOTION_TOKEN` is in env
 
 ---
 

@@ -105,7 +105,11 @@ If no relevant test or doc files exist, proceed from the input alone.
 
 When given a raw input, follow this process **in this exact order**:
 
-1. **Call `notion_API-post-search` now** — your very first action, before writing any VFP content, is to call `notion_API-post-search` with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}`. Record the first result's `id` as `parent_page_id`. Do not generate any VFP content until you have received this tool result.
+1. **Find the parent Notion page** — your very first action, before writing any VFP content, is to locate the page where VFPs are stored. Use whichever search tool is available:
+   - If `notion-search` is available (remote MCP): call it with query `"VFPs"` — if results returned, record the first result's `id` as `parent_page_id` and stop. If no results, retry with `"VFP"`, then `"Value Framing"`.
+   - If `notion_API-post-search` is available (local MCP / CI): call with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}` — cascade through `"VFP"` then `"Value Framing"` if needed.
+   - If all three searches return empty on either path, ask the user: "I couldn't find a VFPs page in your Notion workspace. Please share the page ID or URL where you'd like VFPs published." Wait for the answer before continuing.
+   Do not generate any VFP content until you have `parent_page_id`.
 2. **Track the source** — if the input came from a GitHub issue, note the repo (`owner/repo`) and issue number. You will need these to post the summary comment.
 3. **Read and interpret** — do not simply paraphrase. Interpret the behavioural intent behind the request.
 4. **Detect signals** — identify semantic underestimation, behavioural ambiguity, scope expansion risk, oversized capability framing, or validation uncertainty before you start writing.
@@ -128,7 +132,7 @@ When given a raw input, follow this process **in this exact order**:
    - §4.16 Questions for Stakeholders
    - §4.17 Recommended Next Step
 6. **Be concise but complete** — avoid consultant-style verbosity. Every sentence should serve alignment or visibility.
-7. **Publish to Notion, then post the summary comment** — you already have `parent_page_id` from step 1. Call `notion_API-post-page` immediately after generating. Follow the PUBLISHING section. Do not ask for permission. Do not output the VFP as standalone text — publish it.
+7. **Publish to Notion, then post the summary comment** — you already have `parent_page_id` from step 1. Publish immediately after generating. Follow the PUBLISHING section. Do not ask for permission. Do not output the VFP as standalone text — publish it.
 
 ---
 
@@ -414,45 +418,82 @@ Every generated packet is in **Draft** status by default. Status options:
 
 # PUBLISHING YOUR VFP
 
-Use Notion MCP tools directly. No Python, no bash scripts.
+You already have `parent_page_id` from step 1. If not, repeat the cascade search before continuing.
 
-You already have `parent_page_id` from step 1 of HOW TO GENERATE A VFP. If for any reason you do not have it yet, call `notion_API-post-search` with `query: "VFPs"` and `filter: {"property": "object", "value": "page"}` and record the first result's `id`.
+Use the first path that applies, in this order:
+
+---
+
+## Path A — Remote MCP tools (preferred for local/interactive sessions)
+
+If `notion-create-pages` is in your available tools, use this path.
+
+**Step 1 — Create the page and publish content**
+
+Call `notion-create-pages` with:
+- Parent: the `parent_page_id` from step 1
+- Title: `"VFP — <brief description of the request>"`
+- Content: the full VFP as markdown (see format below)
+
+The tool accepts markdown content directly. Use this format:
+
+```
+Status: Draft
+Date: <YYYY-MM-DD today>
+Source: [GitHub Issue #<n> — <owner/repo>](https://github.com/<owner/repo>/issues/<n>)
+
+### §4.1 Request Summary
+
+<prose content>
+
+### §4.2 Intended Outcome
+
+<prose content>
+
+### §4.3 Expected User Behaviour
+
+- <item>
+- <item>
+
+... (continue for all 17 sections)
+```
+
+Rules: `###` heading for each section title. Prose sections as plain paragraphs. List sections as `- ` bullets. Blank line between sections. Omit the Source line if not triggered from a GitHub issue.
+
+Record the returned page `id` and `url`.
+
+---
+
+## Path B — Python3 direct REST API (CI / headless / NOTION_TOKEN in bash env)
+
+If `NOTION_TOKEN` is in the bash environment, use Python3 urllib. This produces real heading blocks via the Markdown API.
 
 **Step 1 — Create the page**
 
-Call `notion_API-post-page` with:
-- `parent`: `{"page_id": "<parent_page_id>"}`
-- `properties`: title set to `"VFP — <brief description of the request>"`
-
-Note the returned `id` (`page_id`) and `url` (`page_url`).
-
-**Step 2 — Add the VFP content**
-
-Call `notion_API-patch-block-children`. The block array must start with these three metadata paragraph blocks, then an empty paragraph, then the VFP sections:
-
+`POST https://api.notion.com/v1/pages` with `Authorization: Bearer $NOTION_TOKEN`, `Content-Type: application/json`, `Notion-Version: 2022-06-28`:
+```json
+{
+  "parent": { "page_id": "<parent_page_id>" },
+  "properties": { "title": { "title": [{ "text": { "content": "VFP — <brief title>" } }] } }
+}
 ```
-{ "type": "paragraph", "paragraph": { "rich_text": [{ "type": "text", "text": { "content": "Status: Draft" } }] } },
-{ "type": "paragraph", "paragraph": { "rich_text": [{ "type": "text", "text": { "content": "Date: <YYYY-MM-DD today>" } }] } },
-{ "type": "paragraph", "paragraph": { "rich_text": [
-    { "type": "text", "text": { "content": "Source: " } },
-    { "type": "text", "text": { "content": "GitHub Issue #<n> — <owner/repo>", "link": { "url": "https://github.com/<owner/repo>/issues/<n>" } } }
-] } },
-{ "type": "paragraph", "paragraph": { "rich_text": [] } }
-```
+Record the returned `id` as `page_id` and `url` as `page_url`.
 
-If not triggered from a GitHub issue, omit the Source line.
+**Step 2 — Publish content via Markdown API**
 
-After the metadata, append the 17 VFP sections using these rules:
+`PATCH https://api.notion.com/v1/pages/<page_id>/markdown` with `Authorization: Bearer $NOTION_TOKEN`, `Content-Type: application/json`, `Notion-Version: 2026-03-11`, body `{"replace_content": "<full VFP markdown using same format as Path A>"}`.
 
-- **Section title**: plain `paragraph` block with text `"4.1 Request Summary"`, `"4.2 Intended Outcome"`, etc. (use `§4.x` numbering, not `1.`, `2.`)
-- **Prose content** (§4.1, §4.2, §4.4, §4.10, §4.14, §4.15, §4.17): one or more `paragraph` blocks
-- **List content** (§4.3, §4.5, §4.6, §4.7, §4.8, §4.9, §4.11, §4.12, §4.13, §4.16): one `bulleted_list_item` block per item — do NOT dump multi-line text into a single paragraph
-- **Empty paragraph** between sections: `{ "type": "paragraph", "paragraph": { "rich_text": [] } }`
-- **Send ALL blocks in a single `notion_API-patch-block-children` call.** A complete 17-section VFP with metadata is well under the 100-block limit. Never split into multiple calls — one call, all blocks.
+---
 
-**Step 3 — Post the GitHub comment**
+## Path C — Local MCP block API (last resort / CI fallback)
 
-Use this exact structure. Do not paraphrase it or turn it into prose:
+If neither Path A nor Path B is available, use `notion_API-post-page` to create the page, then `notion_API-patch-block-children` for content. Section titles become plain `paragraph` blocks (no real headings). Use `bulleted_list_item` for list sections. Multiple calls are allowed if content exceeds 100 blocks.
+
+---
+
+## Step — Post the GitHub comment (all paths)
+
+After publishing, use this exact structure:
 
 ```bash
 gh issue comment <number> --repo <owner/repo> --body "## VFP Published
@@ -472,9 +513,9 @@ gh issue comment <number> --repo <owner/repo> --body "## VFP Published
 📄 Full Value Framing Packet: <page_url>"
 ```
 
-List all significant risk signals from §4.9 — typically 3–5. Do not summarise them into one. Each bullet must name the classification and give one concrete sentence.
+List all significant risk signals from §4.9 — typically 3–5. Each bullet must name the classification and give one concrete sentence.
 
-**If Notion MCP tools fail**: post the full VFP text as a GitHub comment and state it is in Draft state pending Notion publish.
+**If all Notion publish paths fail**: post the full VFP text as a GitHub comment and state it is in Draft state pending Notion publish.
 
 ---
 
