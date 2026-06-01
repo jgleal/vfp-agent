@@ -64,10 +64,13 @@ Authorization: Bearer <token>
 
 Body:
 ```json
-{ "replace_content": "<full VFP markdown>" }
+{
+  "type": "replace_content",
+  "replace_content": { "new_str": "<full VFP markdown>" }
+}
 ```
 
-`replace_content` replaces the entire page body. `###` headings produce real `heading_3` blocks in Notion. Plain paragraphs are `paragraph` blocks. Bullet lines (`- item`) produce `bulleted_list_item` blocks.
+`replace_content.new_str` replaces the entire page body. `###` headings produce real `heading_3` blocks in Notion. Plain paragraphs are `paragraph` blocks. Bullet lines (`- item`) produce `bulleted_list_item` blocks.
 
 **Note**: the Markdown API requires `Notion-Version: 2026-03-11` — a different version from the create endpoint.
 

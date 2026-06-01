@@ -75,7 +75,7 @@ def main():
     # Step 2 — write content via Markdown API (### → real heading_3 blocks)
     try:
         notion(token, 'PATCH', f'pages/{page_id}/markdown',
-               {'replace_content': markdown},
+               {'type': 'replace_content', 'replace_content': {'new_str': markdown}},
                version='2026-03-11')
     except Exception as e:
         print(f'ERROR: failed to write content to page {page_url}: {e}', file=sys.stderr)
